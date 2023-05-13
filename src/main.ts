@@ -1,3 +1,11 @@
+import { GUI } from 'lil-gui'
+import Stats from 'stats.js'
+
 import './style.css'
 
-console.log('Loaded')
+const stats = new Stats()
+stats.showPanel(0)
+document.body.appendChild(stats.dom)
+
+const gui = new GUI()
+gui.add(document, 'title')
