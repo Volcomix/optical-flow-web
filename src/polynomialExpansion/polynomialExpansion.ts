@@ -1,4 +1,59 @@
+import * as twgl from 'twgl.js'
+
 import gaussian from '../gaussian'
+
+// TODO Extract shaders in dedicated files
+const vertexShader = /* glsl */ `#version 300 es
+ 
+  in vec4 position;
+ 
+  void main() {
+    gl_Position = position;
+  }
+`
+
+const fragmentShader = /* glsl */ `#version 300 es
+
+  precision highp float;
+
+  out vec4 color;
+
+  void main() {
+    color = vec4(1, 0, 0.5, 1);
+  }
+`
+
+export type PolynomialExpansionOptions = Partial<{
+  canvas: HTMLCanvasElement
+  kernelSize: number
+  sigma: number
+}>
+
+// TODO Handle GPU resources disposal
+// TODO Optimize convolution with linear sampling
+const polynomialExpansion = (
+  signal: HTMLImageElement,
+  options: PolynomialExpansionOptions = {}
+) => {
+  const canvas = options.canvas ?? document.createElement('canvas')
+
+  canvas.width = signal.naturalWidth
+  canvas.height = signal.naturalHeight
+
+  const gl = canvas.getContext('webgl2')
+  if (!gl) {
+    throw new Error('WebGL 2 is not available')
+  }
+  const programInfo = twgl.createProgramInfo(gl, [vertexShader, fragmentShader])
+  const arrays = {
+    position: [-1, -1, 0, 1, -1, 0, -1, 1, 0, -1, 1, 0, 1, -1, 0, 1, 1, 0],
+  }
+  const bufferInfo = twgl.createBufferInfoFromArrays(gl, arrays)
+  gl.viewport(0, 0, canvas.width, canvas.height)
+  gl.useProgram(programInfo.program)
+  twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo)
+  twgl.drawBufferInfo(gl, bufferInfo)
+}
 
 const precomputeG = (applicability: number[]) => {
   let a = 0
@@ -45,6 +100,8 @@ const precomputeKernels = (applicability: number[]) => {
   }
   return kernels
 }
+
+export default polynomialExpansion
 
 if (import.meta.vitest) {
   const { describe, expect, test } = import.meta.vitest

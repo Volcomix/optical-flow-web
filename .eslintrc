@@ -28,6 +28,13 @@
           "sibling",
           "index"
         ],
+        "pathGroups": [
+          {
+            "pattern": "./**/*.css",
+            "group": "sibling",
+            "position": "after"
+          }
+        ],
         "newlines-between": "always",
         "warnOnUnassignedImports": true
       }
