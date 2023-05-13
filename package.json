@@ -6,9 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "format": "prettier . --cache",
+    "format:fix": "yarn format --write",
+    "format:check": "yarn format --check"
   },
   "devDependencies": {
+    "prettier": "^2.8.8",
     "typescript": "^5.0.2",
     "vite": "^4.3.2"
   }
