@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "format": "prettier . --cache",
     "format:fix": "yarn format --write",
-    "format:check": "yarn format --check"
+    "format:check": "yarn format --check",
+    "type:check": "tsc --noEmit"
   },
   "devDependencies": {
     "prettier": "^2.8.8",
