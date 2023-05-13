@@ -5,10 +5,14 @@ import gaussian from '../gaussian'
 // TODO Extract shaders in dedicated files
 const vertexShader = /* glsl */ `#version 300 es
  
-  in vec4 position;
+  in vec2 position;
+  in vec2 texCoord;
+
+  out vec2 vTexCoord;
  
   void main() {
-    gl_Position = position;
+    gl_Position = vec4(position * vec2(1, -1), 0, 1);
+    vTexCoord = texCoord;
   }
 `
 
@@ -16,10 +20,14 @@ const fragmentShader = /* glsl */ `#version 300 es
 
   precision highp float;
 
-  out vec4 color;
+  uniform sampler2D signal;
+
+  in vec2 vTexCoord;
+
+  out vec4 outColor;
 
   void main() {
-    color = vec4(1, 0, 0.5, 1);
+    outColor = texture(signal, vTexCoord);
   }
 `
 
@@ -36,7 +44,6 @@ const polynomialExpansion = (
   options: PolynomialExpansionOptions = {}
 ) => {
   const canvas = options.canvas ?? document.createElement('canvas')
-
   canvas.width = signal.naturalWidth
   canvas.height = signal.naturalHeight
 
@@ -45,13 +52,26 @@ const polynomialExpansion = (
     throw new Error('WebGL 2 is not available')
   }
   const programInfo = twgl.createProgramInfo(gl, [vertexShader, fragmentShader])
+
   const arrays = {
     position: [-1, -1, 0, 1, -1, 0, -1, 1, 0, -1, 1, 0, 1, -1, 0, 1, 1, 0],
+    texCoord: [0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1],
   }
   const bufferInfo = twgl.createBufferInfoFromArrays(gl, arrays)
+
+  const textures = twgl.createTextures(gl, {
+    signal: { src: signal },
+  })
+
   gl.viewport(0, 0, canvas.width, canvas.height)
+
+  const uniforms = {
+    signal: textures.signal,
+  }
+
   gl.useProgram(programInfo.program)
   twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo)
+  twgl.setUniforms(programInfo, uniforms)
   twgl.drawBufferInfo(gl, bufferInfo)
 }
 
