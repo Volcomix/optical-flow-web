@@ -29,6 +29,23 @@ const precomputeG = (applicability: number[]) => {
   ]
 }
 
+type Kernels = {
+  one: number[]
+  x: number[]
+  x2: number[]
+}
+
+const precomputeKernels = (applicability: number[]) => {
+  const kernels: Kernels = { one: [], x: [], x2: [] }
+  const n = (applicability.length - 1) / 2
+  for (let x = -n; x <= n; x++) {
+    kernels.one.push(applicability[x + n])
+    kernels.x.push(applicability[x + n] * x)
+    kernels.x2.push(applicability[x + n] * x * x)
+  }
+  return kernels
+}
+
 if (import.meta.vitest) {
   const { describe, expect, test } = import.meta.vitest
 
@@ -46,6 +63,20 @@ if (import.meta.vitest) {
 
     test('larger gaussian', () => {
       expect(precomputeG(gaussian(11))).toMatchSnapshot()
+    })
+  })
+
+  describe('precomputeKernels', () => {
+    test('simple applicability', () => {
+      expect(precomputeKernels([1, 2, 1])).toEqual({
+        one: [1, 2, 1],
+        x: [-1, 0, 1],
+        x2: [1, 0, 1],
+      })
+    })
+
+    test('larger gaussian', () => {
+      expect(precomputeKernels(gaussian(11))).toMatchSnapshot()
     })
   })
 }

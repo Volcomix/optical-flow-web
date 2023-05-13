@@ -19,6 +19,7 @@
     "prepare": "husky install"
   },
   "dependencies": {
+    "mathjs": "^11.8.0",
     "twgl.js": "^5.3.1"
   },
   "devDependencies": {
