@@ -11,7 +11,7 @@ const vertexShader = /* glsl */ `#version 300 es
   out vec2 texCoord;
  
   void main() {
-    gl_Position = vec4(inPosition * vec2(1, -1), 0, 1);
+    gl_Position = vec4(inPosition, 0, 1);
     texCoord = inTexCoord;
   }
 `
@@ -24,10 +24,10 @@ const fragmentShader = /* glsl */ `#version 300 es
 
   in vec2 texCoord;
 
-  out vec4 outColor;
+  out vec4 result;
 
   void main() {
-    outColor = texture(signal, texCoord);
+    result = vec4(190.684, -132.943, 430.436, 0);
   }
 `
 
@@ -43,14 +43,20 @@ const polynomialExpansion = (
   signal: HTMLImageElement,
   options: PolynomialExpansionOptions = {}
 ) => {
-  const canvas = options.canvas ?? document.createElement('canvas')
-  canvas.width = signal.naturalWidth
-  canvas.height = signal.naturalHeight
+  let canvas: HTMLCanvasElement | OffscreenCanvas
+  if (options.canvas) {
+    canvas = options.canvas
+    canvas.width = signal.naturalWidth
+    canvas.height = signal.naturalHeight
+  } else {
+    canvas = new OffscreenCanvas(signal.naturalWidth, signal.naturalHeight)
+  }
 
   const gl = canvas.getContext('webgl2')
   if (!gl) {
     throw new Error('WebGL 2 is not available')
   }
+  twgl.addExtensionsToContext(gl)
   const programInfo = twgl.createProgramInfo(gl, [vertexShader, fragmentShader])
 
   const arrays = {
@@ -63,6 +69,14 @@ const polynomialExpansion = (
     signal: { src: signal },
   })
 
+  const attachments = [{ internalFormat: gl.RGBA16F, type: gl.HALF_FLOAT }]
+  const frameBufferInfo = twgl.createFramebufferInfo(gl, attachments)
+
+  const result = new Float32Array(4)
+
+  // Render
+  gl.bindFramebuffer(gl.FRAMEBUFFER, frameBufferInfo.framebuffer)
+
   gl.viewport(0, 0, canvas.width, canvas.height)
 
   const uniforms = {
@@ -73,6 +87,9 @@ const polynomialExpansion = (
   twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo)
   twgl.setUniforms(programInfo, uniforms)
   twgl.drawBufferInfo(gl, bufferInfo)
+
+  gl.readPixels(585, 387, 1, 1, gl.RGBA, gl.FLOAT, result)
+  console.log({ result })
 }
 
 const precomputeG = (applicability: number[]) => {

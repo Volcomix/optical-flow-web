@@ -22,4 +22,4 @@ if (!canvas) {
   throw new Error('Canvas not found')
 }
 
-polynomialExpansion(image, { canvas })
+polynomialExpansion(image)
