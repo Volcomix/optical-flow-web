@@ -16,20 +16,61 @@ const vertexShader = /* glsl */ `#version 300 es
   }
 `
 
-const fragmentShader = /* glsl */ `#version 300 es
+// TODO Handle texel size and intensity instead of color
+const createFragmentShader = (kernels: Kernels) => {
+  const n = (kernels.x.length - 1) / 2
 
-  precision highp float;
+  return /* glsl */ `#version 300 es
 
-  uniform sampler2D signal;
+    precision highp float;
 
-  in vec2 texCoord;
+    uniform sampler2D signal;
 
-  out vec4 result;
+    in vec2 texCoord;
 
-  void main() {
-    result = vec4(190.684, -132.943, 430.436, 0);
-  }
-`
+    out vec4 result;
+
+    void main() {
+      float one = 0.0;
+      ${kernels.one
+        .map(
+          (weight, i) =>
+            `one += texture(signal, texCoord + vec2(${
+              i - n
+            }, 0)).r * ${weight.toLocaleString('en-US', {
+              minimumFractionDigits: 1,
+            })};`
+        )
+        .join('\n      ')}
+
+      float x = 0.0;
+      ${kernels.x
+        .map(
+          (weight, i) =>
+            `x += texture(signal, texCoord + vec2(${
+              i - n
+            }, 0)).r * ${weight.toLocaleString('en-US', {
+              minimumFractionDigits: 1,
+            })};`
+        )
+        .join('\n      ')}
+
+      float x2 = 0.0;
+      ${kernels.x2
+        .map(
+          (weight, i) =>
+            `x2 += texture(signal, texCoord + vec2(${
+              i - n
+            }, 0)).r * ${weight.toLocaleString('en-US', {
+              minimumFractionDigits: 1,
+            })};`
+        )
+        .join('\n      ')}
+
+      result = vec4(one, x, x2, 0);
+    }
+  `
+}
 
 export type PolynomialExpansionOptions = Partial<{
   canvas: HTMLCanvasElement
@@ -57,6 +98,12 @@ const polynomialExpansion = (
     throw new Error('WebGL 2 is not available')
   }
   twgl.addExtensionsToContext(gl)
+
+  const applicability = gaussian(options.kernelSize ?? 11, options.sigma)
+  const kernels = precomputeKernels(applicability)
+  const fragmentShader = createFragmentShader(kernels)
+  console.log(fragmentShader)
+
   const programInfo = twgl.createProgramInfo(gl, [vertexShader, fragmentShader])
 
   const arrays = {
