@@ -5,14 +5,14 @@ import gaussian from '../gaussian'
 // TODO Extract shaders in dedicated files
 const vertexShader = /* glsl */ `#version 300 es
  
-  in vec2 position;
-  in vec2 texCoord;
+  in vec2 inPosition;
+  in vec2 inTexCoord;
 
-  out vec2 vTexCoord;
+  out vec2 texCoord;
  
   void main() {
-    gl_Position = vec4(position * vec2(1, -1), 0, 1);
-    vTexCoord = texCoord;
+    gl_Position = vec4(inPosition * vec2(1, -1), 0, 1);
+    texCoord = inTexCoord;
   }
 `
 
@@ -22,12 +22,12 @@ const fragmentShader = /* glsl */ `#version 300 es
 
   uniform sampler2D signal;
 
-  in vec2 vTexCoord;
+  in vec2 texCoord;
 
   out vec4 outColor;
 
   void main() {
-    outColor = texture(signal, vTexCoord);
+    outColor = texture(signal, texCoord);
   }
 `
 
@@ -54,8 +54,8 @@ const polynomialExpansion = (
   const programInfo = twgl.createProgramInfo(gl, [vertexShader, fragmentShader])
 
   const arrays = {
-    position: [-1, -1, 0, 1, -1, 0, -1, 1, 0, -1, 1, 0, 1, -1, 0, 1, 1, 0],
-    texCoord: [0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1],
+    inPosition: [-1, -1, 0, 1, -1, 0, -1, 1, 0, -1, 1, 0, 1, -1, 0, 1, 1, 0],
+    inTexCoord: [0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1],
   }
   const bufferInfo = twgl.createBufferInfoFromArrays(gl, arrays)
 
@@ -114,9 +114,10 @@ const precomputeKernels = (applicability: number[]) => {
   const kernels: Kernels = { one: [], x: [], x2: [] }
   const n = (applicability.length - 1) / 2
   for (let x = -n; x <= n; x++) {
-    kernels.one.push(applicability[x + n])
-    kernels.x.push(applicability[x + n] * x)
-    kernels.x2.push(applicability[x + n] * x * x)
+    const weight = applicability[x + n]
+    kernels.one.push(weight)
+    kernels.x.push(weight * x)
+    kernels.x2.push(weight * x * x)
   }
   return kernels
 }
