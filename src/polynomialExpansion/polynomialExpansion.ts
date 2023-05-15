@@ -17,9 +17,9 @@ const vertexShader = /* glsl */ `#version 300 es
 `
 
 // TODO Handle texel size and intensity instead of color
-// TODO Factorize kernel logic
 const createFragmentShader = (kernels: Kernels) => {
   const n = (kernels.x.length - 1) / 2
+  const weights = [kernels.one, kernels.x, kernels.x2]
 
   return /* glsl */ `#version 300 es
 
@@ -32,43 +32,18 @@ const createFragmentShader = (kernels: Kernels) => {
     out vec4 result;
 
     void main() {
-      float one = 0.0;
-      ${kernels.one
-        .map(
-          (weight, i) =>
-            `one += texture(signal, texCoord + vec2(${
-              i - n
-            }, 0)).r * ${weight.toLocaleString('en-US', {
+      result = vec4(0);
+      ${Array.from({ length: kernels.x.length }, (_, i) => {
+        const x = i - n
+        return `result.rgb = texture(signal, texCoord + vec2(${x}, 0)).r * vec3(${weights
+          .map((weight) =>
+            weight[i].toLocaleString('en-US', {
               minimumFractionDigits: 1,
-            })};`
-        )
-        .join('\n      ')}
-
-      float x = 0.0;
-      ${kernels.x
-        .map(
-          (weight, i) =>
-            `x += texture(signal, texCoord + vec2(${
-              i - n
-            }, 0)).r * ${weight.toLocaleString('en-US', {
-              minimumFractionDigits: 1,
-            })};`
-        )
-        .join('\n      ')}
-
-      float x2 = 0.0;
-      ${kernels.x2
-        .map(
-          (weight, i) =>
-            `x2 += texture(signal, texCoord + vec2(${
-              i - n
-            }, 0)).r * ${weight.toLocaleString('en-US', {
-              minimumFractionDigits: 1,
-            })};`
-        )
-        .join('\n      ')}
-
-      result = vec4(one, x, x2, 0);
+              maximumFractionDigits: 20,
+            })
+          )
+          .join(', ')});`
+      }).join('\n      ')}
     }
   `
 }
