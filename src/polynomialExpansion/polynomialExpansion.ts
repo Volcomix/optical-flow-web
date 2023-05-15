@@ -16,6 +16,21 @@ const vertexShader = /* glsl */ `#version 300 es
   }
 `
 
+const intensityFragmentShader = /* glsl */ `#version 300 es
+
+  precision highp float;
+
+  uniform sampler2D signal;
+
+  in vec2 texCoord;
+
+  out float result;
+
+  void main() {
+    result = dot(texture(signal, texCoord), vec4(0.2126, 0.7152, 0.0722, 0));
+  }
+`
+
 // TODO Handle texel size and intensity instead of color
 const createFragmentShader = (kernels: Kernels) => {
   const n = (kernels.x.length - 1) / 2
@@ -35,7 +50,7 @@ const createFragmentShader = (kernels: Kernels) => {
       result = vec4(0);
       ${Array.from({ length: kernels.x.length }, (_, i) => {
         const x = i - n
-        return `result.rgb = texture(signal, texCoord + vec2(${x}, 0)).r * vec3(${weights
+        return `result.rgb = texture(signal, texCoord + vec2(${x}, 0)).a * vec3(${weights
           .map((weight) =>
             weight[i].toLocaleString('en-US', {
               minimumFractionDigits: 1,
@@ -80,6 +95,10 @@ const polynomialExpansion = (
   const fragmentShader = createFragmentShader(kernels)
   console.log(fragmentShader)
 
+  const intensityProgramInfo = twgl.createProgramInfo(gl, [
+    vertexShader,
+    intensityFragmentShader,
+  ])
   const programInfo = twgl.createProgramInfo(gl, [vertexShader, fragmentShader])
 
   const arrays = {
@@ -92,23 +111,32 @@ const polynomialExpansion = (
     signal: { src: signal },
   })
 
-  const attachments = [{ internalFormat: gl.RGBA16F, type: gl.HALF_FLOAT }]
-  const frameBufferInfo = twgl.createFramebufferInfo(gl, attachments)
+  const intensityFrameBufferInfo = twgl.createFramebufferInfo(gl, [
+    { internalFormat: gl.R8 },
+  ])
+  const frameBufferInfo = twgl.createFramebufferInfo(gl, [
+    { internalFormat: gl.RGBA16F, type: gl.HALF_FLOAT },
+  ])
 
   const result = new Float32Array(4)
 
   // Render
-  gl.bindFramebuffer(gl.FRAMEBUFFER, frameBufferInfo.framebuffer)
-
   gl.viewport(0, 0, canvas.width, canvas.height)
 
-  const uniforms = {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, intensityFrameBufferInfo.framebuffer)
+  gl.useProgram(intensityProgramInfo.program)
+  twgl.setBuffersAndAttributes(gl, intensityProgramInfo, bufferInfo)
+  twgl.setUniforms(intensityProgramInfo, {
     signal: textures.signal,
-  }
+  })
+  twgl.drawBufferInfo(gl, bufferInfo)
 
+  gl.bindFramebuffer(gl.FRAMEBUFFER, frameBufferInfo.framebuffer)
   gl.useProgram(programInfo.program)
   twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo)
-  twgl.setUniforms(programInfo, uniforms)
+  twgl.setUniforms(programInfo, {
+    signal: intensityFrameBufferInfo.attachments,
+  })
   twgl.drawBufferInfo(gl, bufferInfo)
 
   gl.readPixels(585, 387, 1, 1, gl.RGBA, gl.FLOAT, result)
