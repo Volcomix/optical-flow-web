@@ -17,6 +17,7 @@ const vertexShader = /* glsl */ `#version 300 es
 `
 
 // TODO Handle texel size and intensity instead of color
+// TODO Factorize kernel logic
 const createFragmentShader = (kernels: Kernels) => {
   const n = (kernels.x.length - 1) / 2
 
