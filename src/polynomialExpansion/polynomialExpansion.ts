@@ -155,7 +155,7 @@ const precomputeG = (applicability: number[]) => {
   for (let x = -n; x <= n; x++) {
     for (let y = -n; y <= n; y++) {
       const weight = applicability[x + n] * applicability[y + n]
-      a += weight // (a · b1, b1) where b1 = 1
+      a += weight // (a · b1, b1) where 'a' is the applicability and b1 = 1
       b += weight * x * x // (a · b2, b2) where b2 = x
       c += weight * x * x * x * x // (a · b4, b4) where b4 = x²
       d += weight * x * y * x * y // (a · b6, b6) where b6 = xy
