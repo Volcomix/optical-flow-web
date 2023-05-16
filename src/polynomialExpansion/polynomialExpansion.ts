@@ -31,14 +31,15 @@ const intensityFragmentShader = /* glsl */ `#version 300 es
   }
 `
 
-// TODO Handle texel size and intensity instead of color
-const createFragmentShader = (kernels: Kernels) => {
+const createFragmentShader = (kernels: Kernels, width: number) => {
   const n = (kernels.x.length - 1) / 2
   const weights = [kernels.one, kernels.x, kernels.x2]
 
   const correlation = Array.from({ length: kernels.x.length }, (_, i) => {
     const x = i - n
-    return `result.rgb += texture(signal, texCoord + vec2(${x}, 0)).r * vec3(${weights
+    return `result.rgb += texture(signal, texCoord + vec2(${
+      x / width
+    }, 0)).r * vec3(${weights
       .map((weight) =>
         weight[i].toLocaleString('en-US', {
           minimumFractionDigits: 1,
@@ -94,7 +95,7 @@ const polynomialExpansion = (
 
   const applicability = gaussian(options.kernelSize ?? 11, options.sigma)
   const kernels = precomputeKernels(applicability)
-  const fragmentShader = createFragmentShader(kernels)
+  const fragmentShader = createFragmentShader(kernels, canvas.width)
   console.log(fragmentShader)
 
   const intensityProgramInfo = twgl.createProgramInfo(gl, [
@@ -142,7 +143,7 @@ const polynomialExpansion = (
   twgl.drawBufferInfo(gl, bufferInfo)
 
   gl.readPixels(585, 387, 1, 1, gl.RGBA, gl.FLOAT, result)
-  console.log({ result })
+  console.log([...result.slice(0, -1).map((v) => v * 255)])
 }
 
 const precomputeG = (applicability: number[]) => {
