@@ -32,10 +32,21 @@ const intensityFragmentShader = /* glsl */ `#version 300 es
 `
 
 // TODO Handle texel size and intensity instead of color
-// TODO Extract generation logic to fix syntax highlighting
 const createFragmentShader = (kernels: Kernels) => {
   const n = (kernels.x.length - 1) / 2
   const weights = [kernels.one, kernels.x, kernels.x2]
+
+  const correlation = Array.from({ length: kernels.x.length }, (_, i) => {
+    const x = i - n
+    return `result.rgb += texture(signal, texCoord + vec2(${x}, 0)).r * vec3(${weights
+      .map((weight) =>
+        weight[i].toLocaleString('en-US', {
+          minimumFractionDigits: 1,
+          maximumFractionDigits: 20,
+        })
+      )
+      .join(', ')});`
+  }).join('\n      ')
 
   return /* glsl */ `#version 300 es
 
@@ -49,17 +60,7 @@ const createFragmentShader = (kernels: Kernels) => {
 
     void main() {
       result = vec4(0);
-      ${Array.from({ length: kernels.x.length }, (_, i) => {
-        const x = i - n
-        return `result.rgb += texture(signal, texCoord + vec2(${x}, 0)).r * vec3(${weights
-          .map((weight) =>
-            weight[i].toLocaleString('en-US', {
-              minimumFractionDigits: 1,
-              maximumFractionDigits: 20,
-            })
-          )
-          .join(', ')});`
-      }).join('\n      ')}
+      ${correlation}
     }
   `
 }
