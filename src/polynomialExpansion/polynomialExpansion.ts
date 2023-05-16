@@ -32,6 +32,7 @@ const intensityFragmentShader = /* glsl */ `#version 300 es
 `
 
 // TODO Handle texel size and intensity instead of color
+// TODO Extract generation logic to fix syntax highlighting
 const createFragmentShader = (kernels: Kernels) => {
   const n = (kernels.x.length - 1) / 2
   const weights = [kernels.one, kernels.x, kernels.x2]
