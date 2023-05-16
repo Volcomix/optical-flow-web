@@ -37,17 +37,15 @@ const createFragmentShader = (kernels: Kernels, width: number) => {
 
   const correlation = Array.from({ length: kernels.x.length }, (_, i) => {
     const x = i - n
-    return `result.rgb += texture(signal, texCoord + vec2(${
-      x / width
-    }, 0)).r * vec3(${weights
+    return `texture(signal, texCoord + vec2(${x / width}, 0)).r * vec3(${weights
       .map((weight) =>
         weight[i].toLocaleString('en-US', {
           minimumFractionDigits: 1,
           maximumFractionDigits: 20,
         })
       )
-      .join(', ')});`
-  }).join('\n      ')
+      .join(', ')})`
+  }).join(' +\n        ')
 
   return /* glsl */ `#version 300 es
 
@@ -60,8 +58,9 @@ const createFragmentShader = (kernels: Kernels, width: number) => {
     out vec4 result;
 
     void main() {
-      result = vec4(0);
-      ${correlation}
+      result = vec4(
+        ${correlation}
+      , 0);
     }
   `
 }
