@@ -50,7 +50,7 @@ const createFragmentShader = (kernels: Kernels) => {
       result = vec4(0);
       ${Array.from({ length: kernels.x.length }, (_, i) => {
         const x = i - n
-        return `result.rgb = texture(signal, texCoord + vec2(${x}, 0)).a * vec3(${weights
+        return `result.rgb = texture(signal, texCoord + vec2(${x}, 0)).r * vec3(${weights
           .map((weight) =>
             weight[i].toLocaleString('en-US', {
               minimumFractionDigits: 1,
@@ -112,7 +112,7 @@ const polynomialExpansion = (
   })
 
   const intensityFrameBufferInfo = twgl.createFramebufferInfo(gl, [
-    { internalFormat: gl.R8 },
+    { internalFormat: gl.R16F, type: gl.HALF_FLOAT },
   ])
   const frameBufferInfo = twgl.createFramebufferInfo(gl, [
     { internalFormat: gl.RGBA16F, type: gl.HALF_FLOAT },
@@ -135,7 +135,7 @@ const polynomialExpansion = (
   gl.useProgram(programInfo.program)
   twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo)
   twgl.setUniforms(programInfo, {
-    signal: intensityFrameBufferInfo.attachments,
+    signal: intensityFrameBufferInfo.attachments[0],
   })
   twgl.drawBufferInfo(gl, bufferInfo)
 
