@@ -50,7 +50,7 @@ const createFragmentShader = (kernels: Kernels) => {
       result = vec4(0);
       ${Array.from({ length: kernels.x.length }, (_, i) => {
         const x = i - n
-        return `result.rgb = texture(signal, texCoord + vec2(${x}, 0)).r * vec3(${weights
+        return `result.rgb += texture(signal, texCoord + vec2(${x}, 0)).r * vec3(${weights
           .map((weight) =>
             weight[i].toLocaleString('en-US', {
               minimumFractionDigits: 1,
