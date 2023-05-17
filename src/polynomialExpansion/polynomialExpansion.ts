@@ -65,6 +65,41 @@ const createFragmentShader = (kernels: Kernels, width: number) => {
   `
 }
 
+// TODO Factorize float formatting and refactor to improve readability
+const createFragmentShader2 = (kernels: Kernels, height: number) => {
+  const n = (kernels.x.length - 1) / 2
+
+  const correlation = Array.from({ length: kernels.x.length }, (_, i) => {
+    const y = i - n
+    return `texture(correlation, texCoord + vec2(0, ${
+      y / height
+    })).xyx * vec3(vec2(${kernels.one[i].toLocaleString('en-US', {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 20,
+    })}), ${kernels.x[i].toLocaleString('en-US', {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 20,
+    })})`
+  }).join(' +\n        ')
+
+  return /* glsl */ `#version 300 es
+
+    precision highp float;
+
+    uniform sampler2D correlation;
+
+    in vec2 texCoord;
+
+    out vec4 result;
+
+    void main() {
+      result = vec4(
+        ${correlation}
+      , 0);
+    }
+  `
+}
+
 export type PolynomialExpansionOptions = Partial<{
   canvas: HTMLCanvasElement
   kernelSize: number
@@ -72,6 +107,7 @@ export type PolynomialExpansionOptions = Partial<{
 }>
 
 // TODO Handle GPU resources disposal
+// TODO Rename stuff and reorganize
 // TODO Optimize convolution with linear sampling
 const polynomialExpansion = (
   signal: HTMLImageElement,
@@ -96,12 +132,18 @@ const polynomialExpansion = (
   const kernels = precomputeKernels(applicability)
   const fragmentShader = createFragmentShader(kernels, canvas.width)
   console.log(fragmentShader)
+  const fragmentShader2 = createFragmentShader2(kernels, canvas.height)
+  console.log(fragmentShader2)
 
   const intensityProgramInfo = twgl.createProgramInfo(gl, [
     vertexShader,
     intensityFragmentShader,
   ])
   const programInfo = twgl.createProgramInfo(gl, [vertexShader, fragmentShader])
+  const programInfo2 = twgl.createProgramInfo(gl, [
+    vertexShader,
+    fragmentShader2,
+  ])
 
   const arrays = {
     inPosition: [-1, -1, 0, 1, -1, 0, -1, 1, 0, -1, 1, 0, 1, -1, 0, 1, 1, 0],
@@ -117,6 +159,9 @@ const polynomialExpansion = (
     { internalFormat: gl.R16F, type: gl.HALF_FLOAT },
   ])
   const frameBufferInfo = twgl.createFramebufferInfo(gl, [
+    { internalFormat: gl.RGBA16F, type: gl.HALF_FLOAT },
+  ])
+  const frameBufferInfo2 = twgl.createFramebufferInfo(gl, [
     { internalFormat: gl.RGBA16F, type: gl.HALF_FLOAT },
   ])
 
@@ -138,6 +183,17 @@ const polynomialExpansion = (
   twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo)
   twgl.setUniforms(programInfo, {
     signal: intensityFrameBufferInfo.attachments[0],
+  })
+  twgl.drawBufferInfo(gl, bufferInfo)
+
+  gl.readPixels(585, 387, 1, 1, gl.RGBA, gl.FLOAT, result)
+  console.log([...result.slice(0, -1).map((v) => v * 255)])
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER, frameBufferInfo2.framebuffer)
+  gl.useProgram(programInfo2.program)
+  twgl.setBuffersAndAttributes(gl, programInfo2, bufferInfo)
+  twgl.setUniforms(programInfo2, {
+    correlation: frameBufferInfo.attachments[0],
   })
   twgl.drawBufferInfo(gl, bufferInfo)
 
