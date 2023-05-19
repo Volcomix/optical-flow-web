@@ -2,107 +2,18 @@ import * as twgl from 'twgl.js'
 
 import gaussian from '../gaussian'
 
-// TODO Extract shaders in dedicated files
-const vertexShader = /* glsl */ `#version 300 es
- 
-  in vec2 inPosition;
-  in vec2 inTexCoord;
-
-  out vec2 texCoord;
- 
-  void main() {
-    gl_Position = vec4(inPosition, 0, 1);
-    texCoord = inTexCoord;
-  }
-`
-
-const intensityFragmentShader = /* glsl */ `#version 300 es
-
-  precision highp float;
-
-  uniform sampler2D signal;
-
-  in vec2 texCoord;
-
-  out float result;
-
-  void main() {
-    result = dot(texture(signal, texCoord), vec4(0.2126, 0.7152, 0.0722, 0));
-  }
-`
-
-const createFragmentShader = (kernels: Kernels, width: number) => {
-  const n = (kernels.x.length - 1) / 2
-  const weights = [kernels.one, kernels.x, kernels.x2]
-
-  const correlation = Array.from({ length: kernels.x.length }, (_, i) => {
-    const x = i - n
-    return `texture(signal, texCoord + vec2(${x / width}, 0)).r * vec3(${weights
-      .map((weight) =>
-        weight[i].toLocaleString('en-US', {
-          minimumFractionDigits: 1,
-          maximumFractionDigits: 20,
-        })
-      )
-      .join(', ')})`
-  }).join(' +\n        ')
-
-  return /* glsl */ `#version 300 es
-
-    precision highp float;
-
-    uniform sampler2D signal;
-
-    in vec2 texCoord;
-
-    out vec4 result;
-
-    void main() {
-      result = vec4(
-        ${correlation}
-      , 0);
-    }
-  `
-}
-
-// TODO Factorize float formatting and refactor to improve readability
-const createFragmentShader2 = (kernels: Kernels, height: number) => {
-  const n = (kernels.x.length - 1) / 2
-
-  const correlation = Array.from({ length: kernels.x.length }, (_, i) => {
-    const y = i - n
-    return `texture(correlation, texCoord + vec2(0, ${
-      y / height
-    })).xyx * vec3(vec2(${kernels.one[i].toLocaleString('en-US', {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 20,
-    })}), ${kernels.x[i].toLocaleString('en-US', {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 20,
-    })})`
-  }).join(' +\n        ')
-
-  return /* glsl */ `#version 300 es
-
-    precision highp float;
-
-    uniform sampler2D correlation;
-
-    in vec2 texCoord;
-
-    out vec4 result;
-
-    void main() {
-      result = vec4(
-        ${correlation}
-      , 0);
-    }
-  `
-}
+import { createCorrelationXFragmentShader } from './shaders/correlationX.frag'
+import { createCorrelationYFragmentShader } from './shaders/correlationY.frag'
+import { createIntensityFragmentShader } from './shaders/intensity.frag'
+import { createQuadVertexShader } from './shaders/quad.vert'
+import { Kernels } from './types'
 
 export type PolynomialExpansionOptions = Partial<{
   canvas: HTMLCanvasElement
+
+  /** Default: 11  */
   kernelSize: number
+
   sigma: number
 }>
 
@@ -130,19 +41,39 @@ const polynomialExpansion = (
 
   const applicability = gaussian(options.kernelSize ?? 11, options.sigma)
   const kernels = precomputeKernels(applicability)
-  const fragmentShader = createFragmentShader(kernels, canvas.width)
-  console.log(fragmentShader)
-  const fragmentShader2 = createFragmentShader2(kernels, canvas.height)
-  console.log(fragmentShader2)
 
+  const quadVertexShader = createQuadVertexShader()
+  console.log(quadVertexShader)
+
+  const intensityFragmentShader = createIntensityFragmentShader({
+    lumaTransformRec: 601,
+  })
+  console.log(intensityFragmentShader)
+
+  const correlationXFragmentShader = createCorrelationXFragmentShader(
+    kernels,
+    canvas.width
+  )
+  console.log(correlationXFragmentShader)
+
+  const correlationYFragmentShader = createCorrelationYFragmentShader(
+    kernels,
+    canvas.height
+  )
+  console.log(correlationYFragmentShader)
+
+  // TODO Revamp using createProgramInfos?
   const intensityProgramInfo = twgl.createProgramInfo(gl, [
-    vertexShader,
+    quadVertexShader,
     intensityFragmentShader,
   ])
-  const programInfo = twgl.createProgramInfo(gl, [vertexShader, fragmentShader])
-  const programInfo2 = twgl.createProgramInfo(gl, [
-    vertexShader,
-    fragmentShader2,
+  const correlationXProgramInfo = twgl.createProgramInfo(gl, [
+    quadVertexShader,
+    correlationXFragmentShader,
+  ])
+  const correlationYProgramInfo = twgl.createProgramInfo(gl, [
+    quadVertexShader,
+    correlationYFragmentShader,
   ])
 
   const arrays = {
@@ -155,17 +86,19 @@ const polynomialExpansion = (
     signal: { src: signal },
   })
 
+  // TODO Handle options for R8 vs R16F + FLOAT vs HALF_FLOAT
   const intensityFrameBufferInfo = twgl.createFramebufferInfo(gl, [
-    { internalFormat: gl.R16F, type: gl.HALF_FLOAT },
+    { internalFormat: gl.R8 },
   ])
-  const frameBufferInfo = twgl.createFramebufferInfo(gl, [
-    { internalFormat: gl.RGBA16F, type: gl.HALF_FLOAT },
+  const correlationXFrameBufferInfo = twgl.createFramebufferInfo(gl, [
+    { internalFormat: gl.RGBA32F },
   ])
-  const frameBufferInfo2 = twgl.createFramebufferInfo(gl, [
-    { internalFormat: gl.RGBA16F, type: gl.HALF_FLOAT },
+  const correlationYFrameBufferInfo2 = twgl.createFramebufferInfo(gl, [
+    { internalFormat: gl.RGBA32UI, type: gl.UNSIGNED_INT },
   ])
 
-  const result = new Float32Array(4)
+  const correlationXData = new Float32Array(4)
+  const correlationYData = new Uint32Array(4)
 
   // Render
   gl.viewport(0, 0, canvas.width, canvas.height)
@@ -178,27 +111,39 @@ const polynomialExpansion = (
   })
   twgl.drawBufferInfo(gl, bufferInfo)
 
-  gl.bindFramebuffer(gl.FRAMEBUFFER, frameBufferInfo.framebuffer)
-  gl.useProgram(programInfo.program)
-  twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo)
-  twgl.setUniforms(programInfo, {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, correlationXFrameBufferInfo.framebuffer)
+  gl.useProgram(correlationXProgramInfo.program)
+  twgl.setBuffersAndAttributes(gl, correlationXProgramInfo, bufferInfo)
+  twgl.setUniforms(correlationXProgramInfo, {
     signal: intensityFrameBufferInfo.attachments[0],
   })
   twgl.drawBufferInfo(gl, bufferInfo)
 
-  gl.readPixels(585, 387, 1, 1, gl.RGBA, gl.FLOAT, result)
-  console.log([...result.slice(0, -1).map((v) => v * 255)])
+  gl.readPixels(585, 387, 1, 1, gl.RGBA, gl.FLOAT, correlationXData)
+  console.log([...correlationXData.slice(0, -1).map((v) => v * 255)])
 
-  gl.bindFramebuffer(gl.FRAMEBUFFER, frameBufferInfo2.framebuffer)
-  gl.useProgram(programInfo2.program)
-  twgl.setBuffersAndAttributes(gl, programInfo2, bufferInfo)
-  twgl.setUniforms(programInfo2, {
-    correlation: frameBufferInfo.attachments[0],
+  gl.bindFramebuffer(gl.FRAMEBUFFER, correlationYFrameBufferInfo2.framebuffer)
+  gl.useProgram(correlationYProgramInfo.program)
+  twgl.setBuffersAndAttributes(gl, correlationYProgramInfo, bufferInfo)
+  twgl.setUniforms(correlationYProgramInfo, {
+    correlation: correlationXFrameBufferInfo.attachments[0],
   })
   twgl.drawBufferInfo(gl, bufferInfo)
 
-  gl.readPixels(585, 387, 1, 1, gl.RGBA, gl.FLOAT, result)
-  console.log([...result.slice(0, -1).map((v) => v * 255)])
+  gl.readPixels(
+    585,
+    387,
+    1,
+    1,
+    gl.RGBA_INTEGER,
+    gl.UNSIGNED_INT,
+    correlationYData
+  )
+  console.log(
+    [...new Uint16Array(correlationYData.buffer)]
+      .slice(0, -2)
+      .map((v) => `0x${v.toString(16)}`)
+  )
 }
 
 const precomputeG = (applicability: number[]) => {
@@ -228,12 +173,6 @@ const precomputeG = (applicability: number[]) => {
     [0, 0, 0, 0, 0, d], // xy
     //1 x  y  x² y² xy
   ]
-}
-
-type Kernels = {
-  one: number[]
-  x: number[]
-  x2: number[]
 }
 
 const precomputeKernels = (applicability: number[]) => {
