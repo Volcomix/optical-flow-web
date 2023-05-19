@@ -1,6 +1,6 @@
 import { Kernels } from '../types'
 
-// TODO Factorize float formatting and refactor to improve readability
+// TODO Refactor to improve readability
 // TODO Rename variables (result1, result2, v, k)
 export const createCorrelationYFragmentShader = (
   kernels: Kernels,
@@ -12,14 +12,7 @@ export const createCorrelationYFragmentShader = (
   const correlation = Array.from({ length: kernels.x.length }, (_, i) => {
     const y = i - n
     return `v = texture(correlation, texCoord + vec2(0, ${y / height})).rgb;
-      k = vec3(${weights
-        .map((weight) =>
-          weight[i].toLocaleString('en-US', {
-            minimumFractionDigits: 1,
-            maximumFractionDigits: 20,
-          })
-        )
-        .join(', ')});
+      k = vec3(${weights.map((weight) => weight[i]).join(', ')});
       result1 += v.xyxz * k.xxyx;
       result2 += v.xy * k.zy;`
   }).join('\n\n      ')

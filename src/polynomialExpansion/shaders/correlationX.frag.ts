@@ -10,12 +10,7 @@ export const createCorrelationXFragmentShader = (
   const correlation = Array.from({ length: kernels.x.length }, (_, i) => {
     const x = i - n
     return `texture(signal, texCoord + vec2(${x / width}, 0)).r * vec3(${weights
-      .map((weight) =>
-        weight[i].toLocaleString('en-US', {
-          minimumFractionDigits: 1,
-          maximumFractionDigits: 20,
-        })
-      )
+      .map((weight) => weight[i])
       .join(', ')})`
   }).join(' +\n        ')
 
