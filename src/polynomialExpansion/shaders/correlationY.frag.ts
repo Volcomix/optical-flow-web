@@ -1,7 +1,5 @@
 import { Kernels } from '../types'
 
-// TODO Refactor to improve readability
-// TODO Rename variables (result1, result2, v, k)
 export const createCorrelationYFragmentShader = (
   kernels: Kernels,
   height: number
@@ -11,10 +9,11 @@ export const createCorrelationYFragmentShader = (
 
   const correlation = Array.from({ length: kernels.x.length }, (_, i) => {
     const y = i - n
-    return `v = texture(correlation, texCoord + vec2(0, ${y / height})).rgb;
-      k = vec3(${weights.map((weight) => weight[i]).join(', ')});
-      result1 += v.xyxz * k.xxyx;
-      result2 += v.xy * k.zy;`
+    const texelHeight = y / height
+    return `values = texture(correlation, texCoord + vec2(0, ${texelHeight})).rgb;
+      weights = vec3(${weights.map((weight) => weight[i]).join(', ')});
+      result1_4 += values.xyxz * weights.xxyx;
+      result5_6 += values.xy * weights.zy;`
   }).join('\n\n      ')
 
   return /* glsl */ `#version 300 es
@@ -28,14 +27,14 @@ export const createCorrelationYFragmentShader = (
     out uvec4 result;
 
     void main() {
-      vec3 v;
-      vec3 k;
-      vec4 result1 = vec4(0);
-      vec2 result2 = vec2(0);
+      vec3 values;
+      vec3 weights;
+      vec4 result1_4 = vec4(0);
+      vec2 result5_6 = vec2(0);
 
       ${correlation}
 
-      result = uvec4(packHalf2x16(result1.xy), packHalf2x16(result1.zw), packHalf2x16(result2), 0);
+      result = uvec4(packHalf2x16(result1_4.xy), packHalf2x16(result1_4.zw), packHalf2x16(result5_6), 0);
     }
   `
 }
