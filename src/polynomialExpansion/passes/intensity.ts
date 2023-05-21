@@ -2,9 +2,9 @@ import * as twgl from 'twgl.js'
 
 import { Pass, PassOptions } from './pass'
 
-type LumaTransformRec = 709 | 601
+export type LumaTransformRec = 709 | 601
 
-type IntensityPassOptions = PassOptions &
+export type IntensityPassOptions = PassOptions &
   Partial<{
     lumaTransformRec: LumaTransformRec
   }>
