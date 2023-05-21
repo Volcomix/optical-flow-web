@@ -8,15 +8,18 @@ export type PassOptions = Partial<{
   uniforms: { [key: string]: unknown }
 }>
 
-export abstract class Pass<O extends PassOptions> {
+export abstract class Pass<O extends PassOptions = PassOptions> {
   private programInfo: twgl.ProgramInfo
   private frameBufferInfo: twgl.FramebufferInfo | null
 
   constructor(
     private gl: WebGL2RenderingContext,
     private bufferInfo: twgl.BufferInfo,
-    protected options: O
+    protected options: O,
+    properties: { [key: string]: unknown } = {}
   ) {
+    Object.assign(this, properties)
+
     const vertexShader = this.createVertexShader()
     const fragmentShader = this.createFragmentShader()
 
@@ -32,6 +35,7 @@ export abstract class Pass<O extends PassOptions> {
       vertexShader,
       fragmentShader,
     ])
+
     if (options.frameBuffer) {
       this.frameBufferInfo = twgl.createFramebufferInfo(gl, [
         options.frameBuffer,
