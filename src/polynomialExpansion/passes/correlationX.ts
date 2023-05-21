@@ -34,7 +34,7 @@ export class CorrelationXPass extends Pass {
           .map((weight) => weight[i])
           .join(', ')})`
       }
-    ).join(' +\n        ')
+    ).join(' +\n          ')
 
     return /* glsl */ `#version 300 es
     
