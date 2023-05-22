@@ -76,7 +76,7 @@ const polynomialExpansion = (
   gl.readPixels(585, 387, 1, 1, gl.RGBA, gl.FLOAT, correlationXData)
   console.log(
     'Separable correlation - x direction',
-    [...correlationXData.slice(0, -1)].map((v) => v * 255)
+    [...correlationXData.slice(0, -1)].map((v) => Number((v * 255).toFixed(3)))
   )
 
   correlationYPass.render()
