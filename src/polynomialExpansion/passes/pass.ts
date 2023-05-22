@@ -8,14 +8,14 @@ export type PassOptions = Partial<{
   uniforms: { [key: string]: unknown }
 }>
 
-export abstract class Pass<O extends PassOptions = PassOptions> {
+export abstract class Pass<P> {
   private programInfo: twgl.ProgramInfo
   private frameBufferInfo: twgl.FramebufferInfo | null
 
   constructor(
     private gl: WebGL2RenderingContext,
     private bufferInfo: twgl.BufferInfo,
-    protected options: O
+    protected props: PassOptions & P
   ) {
     const vertexShader = this.createVertexShader()
     const fragmentShader = this.createFragmentShader()
@@ -33,17 +33,15 @@ export abstract class Pass<O extends PassOptions = PassOptions> {
       fragmentShader,
     ])
 
-    if (options.frameBuffer) {
-      this.frameBufferInfo = twgl.createFramebufferInfo(gl, [
-        options.frameBuffer,
-      ])
+    if (props.frameBuffer) {
+      this.frameBufferInfo = twgl.createFramebufferInfo(gl, [props.frameBuffer])
     } else {
       this.frameBufferInfo = null
     }
   }
 
   private createVertexShader() {
-    const position = this.options.flipY
+    const position = this.props.flipY
       ? 'inPosition * vec2(1, -1)'
       : 'inPosition'
 
@@ -70,8 +68,8 @@ export abstract class Pass<O extends PassOptions = PassOptions> {
     )
     this.gl.useProgram(this.programInfo.program)
     twgl.setBuffersAndAttributes(this.gl, this.programInfo, this.bufferInfo)
-    if (this.options.uniforms) {
-      twgl.setUniforms(this.programInfo, this.options.uniforms)
+    if (this.props.uniforms) {
+      twgl.setUniforms(this.programInfo, this.props.uniforms)
     }
     twgl.drawBufferInfo(this.gl, this.bufferInfo)
   }

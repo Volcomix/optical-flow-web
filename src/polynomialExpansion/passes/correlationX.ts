@@ -1,28 +1,27 @@
 import { Kernels } from '../types'
 
-import { Pass, PassOptions } from './pass'
+import { Pass } from './pass'
 
-// FIXME Kernels and width aren't really options
-export type CorrelationXPassOptions = PassOptions & {
+export type CorrelationXPassProps = {
   kernels: Kernels
   width: number
 }
 
-export class CorrelationXPass extends Pass<CorrelationXPassOptions> {
+export class CorrelationXPass extends Pass<CorrelationXPassProps> {
   protected createFragmentShader() {
-    const n = (this.options.kernels.x.length - 1) / 2
+    const n = (this.props.kernels.x.length - 1) / 2
 
     const weights = [
-      this.options.kernels.one,
-      this.options.kernels.x,
-      this.options.kernels.x2,
+      this.props.kernels.one,
+      this.props.kernels.x,
+      this.props.kernels.x2,
     ]
 
     const correlation = Array.from(
-      { length: this.options.kernels.x.length },
+      { length: this.props.kernels.x.length },
       (_, i) => {
         const x = i - n
-        const texelWidth = x / this.options.width
+        const texelWidth = x / this.props.width
         return `texture(signal, texCoord + vec2(${texelWidth}, 0)).r * vec3(${weights
           .map((weight) => weight[i])
           .join(', ')})`

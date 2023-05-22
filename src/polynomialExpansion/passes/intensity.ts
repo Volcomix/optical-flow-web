@@ -1,16 +1,15 @@
-import { Pass, PassOptions } from './pass'
+import { Pass } from './pass'
 
 export type LumaTransformRec = 709 | 601
 
-export type IntensityPassOptions = PassOptions &
-  Partial<{
-    lumaTransformRec: LumaTransformRec
-  }>
+export type IntensityPassProps = {
+  lumaTransformRec?: LumaTransformRec
+}
 
-export class IntensityPass extends Pass<IntensityPassOptions> {
+export class IntensityPass extends Pass<IntensityPassProps> {
   protected createFragmentShader() {
     const coeffs = (
-      this.options.lumaTransformRec === 601
+      this.props.lumaTransformRec === 601
         ? [0.299, 0.587, 0.114]
         : [0.2126, 0.7152, 0.0722]
     ).join(', ')
