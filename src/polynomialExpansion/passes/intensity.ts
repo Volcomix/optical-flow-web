@@ -1,5 +1,3 @@
-import * as twgl from 'twgl.js'
-
 import { Pass, PassOptions } from './pass'
 
 export type LumaTransformRec = 709 | 601
@@ -10,18 +8,6 @@ export type IntensityPassOptions = PassOptions &
   }>
 
 export class IntensityPass extends Pass<IntensityPassOptions> {
-  constructor(
-    gl: WebGL2RenderingContext,
-    bufferInfo: twgl.BufferInfo,
-    signal: WebGLTexture,
-    options: IntensityPassOptions = {}
-  ) {
-    super(gl, bufferInfo, {
-      ...options,
-      uniforms: { signal, ...options.uniforms },
-    })
-  }
-
   protected createFragmentShader() {
     const coeffs = (
       this.options.lumaTransformRec === 601

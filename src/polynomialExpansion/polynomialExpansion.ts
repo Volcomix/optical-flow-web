@@ -60,18 +60,17 @@ const polynomialExpansion = (
     signal: { src: signal },
   })
 
-  const intensityPass = new IntensityPass(gl, bufferInfo, textures.signal, {
+  const intensityPass = new IntensityPass(gl, bufferInfo, {
     lumaTransformRec: 601,
+    uniforms: { signal: textures.signal },
     frameBuffer: { internalFormat: gl.R8 },
   })
-  const correlationXPass = new CorrelationXPass(
-    gl,
-    bufferInfo,
+  const correlationXPass = new CorrelationXPass(gl, bufferInfo, {
     kernels,
-    canvas.width,
-    intensityPass.attachment as WebGLRenderbuffer, // TODO Type as NonNullable in IntensityPass
-    { frameBuffer: { internalFormat: gl.RGBA32F } }
-  )
+    width: canvas.width,
+    uniforms: { signal: intensityPass.attachment },
+    frameBuffer: { internalFormat: gl.RGBA32F },
+  })
   const correlationYFrameBufferInfo = twgl.createFramebufferInfo(gl, [
     { internalFormat: gl.RGBA32UI, type: gl.UNSIGNED_INT },
   ])

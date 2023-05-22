@@ -15,11 +15,8 @@ export abstract class Pass<O extends PassOptions = PassOptions> {
   constructor(
     private gl: WebGL2RenderingContext,
     private bufferInfo: twgl.BufferInfo,
-    protected options: O,
-    properties: { [key: string]: unknown } = {}
+    protected options: O
   ) {
-    Object.assign(this, properties)
-
     const vertexShader = this.createVertexShader()
     const fragmentShader = this.createFragmentShader()
 
