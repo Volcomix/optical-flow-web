@@ -3,9 +3,8 @@ import * as twgl from 'twgl.js'
 import gaussian from '../gaussian'
 
 import { CorrelationXPass } from './passes/correlationX'
+import { CorrelationYPass } from './passes/correlationY'
 import { IntensityPass } from './passes/intensity'
-import { createCorrelationYFragmentShader } from './shaders/correlationY.frag'
-import { createQuadVertexShader } from './shaders/quad.vert'
 import { Kernels } from './types'
 
 export type PolynomialExpansionOptions = Partial<{
@@ -37,19 +36,6 @@ const polynomialExpansion = (
   const applicability = gaussian(options.kernelSize ?? 11, options.sigma)
   const kernels = precomputeKernels(applicability)
 
-  const quadVertexShader = createQuadVertexShader()
-  console.log(quadVertexShader)
-
-  const correlationYFragmentShader = createCorrelationYFragmentShader(
-    kernels,
-    canvas.height
-  )
-  console.log(correlationYFragmentShader)
-
-  const programInfos = twgl.createProgramInfos(gl, {
-    correlationY: [quadVertexShader, correlationYFragmentShader],
-  })
-
   const arrays = {
     inPosition: [-1, -1, 0, 1, -1, 0, -1, 1, 0, -1, 1, 0, 1, -1, 0, 1, 1, 0],
     inTexCoord: [0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1],
@@ -71,9 +57,12 @@ const polynomialExpansion = (
     uniforms: { signal: intensityPass.attachment },
     frameBuffer: { internalFormat: gl.RGBA32F },
   })
-  const correlationYFrameBufferInfo = twgl.createFramebufferInfo(gl, [
-    { internalFormat: gl.RGBA32UI, type: gl.UNSIGNED_INT },
-  ])
+  const correlationYPass = new CorrelationYPass(gl, bufferInfo, {
+    kernels,
+    height: canvas.height,
+    uniforms: { correlation: correlationXPass.attachment },
+    frameBuffer: { internalFormat: gl.RGBA32UI, type: gl.UNSIGNED_INT },
+  })
 
   const correlationXData = new Float32Array(4)
   const correlationYData = new Uint32Array(4)
@@ -85,15 +74,12 @@ const polynomialExpansion = (
   correlationXPass.render()
 
   gl.readPixels(585, 387, 1, 1, gl.RGBA, gl.FLOAT, correlationXData)
-  console.log([...correlationXData.slice(0, -1)].map((v) => v * 255))
+  console.log(
+    'Separable correlation - x direction',
+    [...correlationXData.slice(0, -1)].map((v) => v * 255)
+  )
 
-  gl.bindFramebuffer(gl.FRAMEBUFFER, correlationYFrameBufferInfo.framebuffer)
-  gl.useProgram(programInfos.correlationY.program)
-  twgl.setBuffersAndAttributes(gl, programInfos.correlationY, bufferInfo)
-  twgl.setUniforms(programInfos.correlationY, {
-    correlation: correlationXPass.attachment,
-  })
-  twgl.drawBufferInfo(gl, bufferInfo)
+  correlationYPass.render()
 
   gl.readPixels(
     585,
@@ -105,6 +91,7 @@ const polynomialExpansion = (
     correlationYData
   )
   console.log(
+    'Separable correlation - y direction',
     [...new Uint16Array(correlationYData.buffer)]
       .slice(0, -2)
       .map((v) => `0x${v.toString(16)}`)
