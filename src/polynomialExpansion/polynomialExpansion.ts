@@ -60,12 +60,13 @@ const polynomialExpansion = (
   const correlationYPass = new CorrelationYPass(gl, bufferInfo, {
     kernels,
     height: canvas.height,
+    output: '1_4',
     uniforms: { correlation: correlationXPass.attachment },
-    frameBuffer: { internalFormat: gl.RGBA32UI, type: gl.UNSIGNED_INT },
+    frameBuffer: { internalFormat: gl.RGBA32F },
   })
 
   const correlationXData = new Float32Array(4)
-  const correlationYData = new Uint32Array(4)
+  const correlationYData = new Float32Array(4)
 
   // Render
   gl.viewport(0, 0, canvas.width, canvas.height)
@@ -81,20 +82,10 @@ const polynomialExpansion = (
 
   correlationYPass.render()
 
-  gl.readPixels(
-    585,
-    387,
-    1,
-    1,
-    gl.RGBA_INTEGER,
-    gl.UNSIGNED_INT,
-    correlationYData
-  )
+  gl.readPixels(585, 387, 1, 1, gl.RGBA, gl.FLOAT, correlationYData)
   console.log(
     'Separable correlation - y direction',
-    [...new Uint16Array(correlationYData.buffer)]
-      .slice(0, -2)
-      .map((v) => `0x${v.toString(16)}`)
+    [...correlationYData].map((v) => Number((v * 255).toFixed(3)))
   )
 }
 
