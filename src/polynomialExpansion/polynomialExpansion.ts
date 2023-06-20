@@ -3,9 +3,15 @@ import * as twgl from 'twgl.js'
 import gaussian from '../gaussian'
 
 import { CorrelationXPass } from './passes/correlationX'
-import { CorrelationYPass } from './passes/correlationY'
+import { CorrelationY14Pass } from './passes/correlationY14'
+import { CorrelationY56Pass } from './passes/correlationY56'
 import { IntensityPass } from './passes/intensity'
 import { Kernels } from './types'
+
+const debugPoint = {
+  x: 585,
+  y: 387,
+}
 
 export type PolynomialExpansionOptions = Partial<{
   canvas: HTMLCanvasElement
@@ -57,16 +63,22 @@ const polynomialExpansion = (
     uniforms: { signal: intensityPass.attachment },
     frameBuffer: { internalFormat: gl.RGBA32F },
   })
-  const correlationYPass = new CorrelationYPass(gl, bufferInfo, {
+  const correlationY14Pass = new CorrelationY14Pass(gl, bufferInfo, {
     kernels,
     height: canvas.height,
-    output: '1_4',
+    uniforms: { correlation: correlationXPass.attachment },
+    frameBuffer: { internalFormat: gl.RGBA32F },
+  })
+  const correlationY56Pass = new CorrelationY56Pass(gl, bufferInfo, {
+    kernels,
+    height: canvas.height,
     uniforms: { correlation: correlationXPass.attachment },
     frameBuffer: { internalFormat: gl.RGBA32F },
   })
 
   const correlationXData = new Float32Array(4)
-  const correlationYData = new Float32Array(4)
+  const correlationY14Data = new Float32Array(4)
+  const correlationY56Data = new Float32Array(4)
 
   // Render
   gl.viewport(0, 0, canvas.width, canvas.height)
@@ -74,18 +86,47 @@ const polynomialExpansion = (
   intensityPass.render()
   correlationXPass.render()
 
-  gl.readPixels(585, 387, 1, 1, gl.RGBA, gl.FLOAT, correlationXData)
+  gl.readPixels(
+    debugPoint.x,
+    debugPoint.y,
+    1,
+    1,
+    gl.RGBA,
+    gl.FLOAT,
+    correlationXData
+  )
   console.log(
     'Separable correlation - x direction',
     [...correlationXData.slice(0, -1)].map((v) => Number((v * 255).toFixed(3)))
   )
 
-  correlationYPass.render()
+  correlationY14Pass.render()
+  gl.readPixels(
+    debugPoint.x,
+    debugPoint.y,
+    1,
+    1,
+    gl.RGBA,
+    gl.FLOAT,
+    correlationY14Data
+  )
 
-  gl.readPixels(585, 387, 1, 1, gl.RGBA, gl.FLOAT, correlationYData)
+  correlationY56Pass.render()
+  gl.readPixels(
+    debugPoint.x,
+    debugPoint.y,
+    1,
+    1,
+    gl.RGBA,
+    gl.FLOAT,
+    correlationY56Data
+  )
+
   console.log(
     'Separable correlation - y direction',
-    [...correlationYData].map((v) => Number((v * 255).toFixed(3)))
+    [...correlationY14Data, ...correlationY56Data.slice(0, 2)].map((v) =>
+      Number((v * 255).toFixed(3))
+    )
   )
 }
 
