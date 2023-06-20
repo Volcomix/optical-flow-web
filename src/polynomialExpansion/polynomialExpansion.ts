@@ -3,7 +3,8 @@ import * as twgl from 'twgl.js'
 
 import gaussian from '../gaussian'
 
-import { Coefficients14Pass } from './passes/coefficients'
+import { Coefficients14Pass } from './passes/coefficients14'
+import { Coefficients56Pass } from './passes/coefficients56'
 import { CorrelationXPass } from './passes/correlationX'
 import { CorrelationY14Pass } from './passes/correlationY14'
 import { CorrelationY56Pass } from './passes/correlationY56'
@@ -86,11 +87,20 @@ const polynomialExpansion = (
     },
     frameBuffer: { internalFormat: gl.RGBA32F },
   })
+  const coefficients56Pass = new Coefficients56Pass(gl, bufferInfo, {
+    invG,
+    uniforms: {
+      correlation14: correlationY14Pass.attachment,
+      correlation56: correlationY56Pass.attachment,
+    },
+    frameBuffer: { internalFormat: gl.RGBA32F },
+  })
 
   const correlationXData = new Float32Array(4)
   const correlationY14Data = new Float32Array(4)
   const correlationY56Data = new Float32Array(4)
   const coefficients14Data = new Float32Array(4)
+  const coefficients56Data = new Float32Array(4)
 
   // Render
   gl.viewport(0, 0, canvas.width, canvas.height)
@@ -152,9 +162,22 @@ const polynomialExpansion = (
     coefficients14Data
   )
 
+  coefficients56Pass.render()
+  gl.readPixels(
+    debugPoint.x,
+    debugPoint.y,
+    1,
+    1,
+    gl.RGBA,
+    gl.FLOAT,
+    coefficients56Data
+  )
+
   console.log(
     'Resulting coefficients',
-    [...coefficients14Data].map((v) => Number((v * 255).toFixed(3)))
+    [...coefficients14Data, ...coefficients56Data.slice(0, 2)].map((v) =>
+      Number((v * 255).toFixed(3))
+    )
   )
 }
 
