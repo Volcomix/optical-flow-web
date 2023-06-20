@@ -22,7 +22,6 @@ export type PolynomialExpansionOptions = Partial<{
   sigma: number
 }>
 
-// TODO Optimize convolution with linear sampling
 const polynomialExpansion = (
   signal: HTMLImageElement,
   options: PolynomialExpansionOptions = {}
