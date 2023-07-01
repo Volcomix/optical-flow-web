@@ -47,7 +47,7 @@ if (!canvas) {
 }
 
 const { default: polynomialExpansion } = await import('./polynomialExpansion')
-const result = polynomialExpansion(image)
+const result = polynomialExpansion(image, { logShaders: true })
 
 const pixelData = new Float32Array(4)
 

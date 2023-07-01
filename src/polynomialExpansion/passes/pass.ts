@@ -8,6 +8,8 @@ export type PassProps = {
 }
 
 export abstract class Pass<P> {
+  static logShaders = false
+
   private programInfo: twgl.ProgramInfo
   private frameBufferInfo: twgl.FramebufferInfo | null
 
@@ -19,13 +21,14 @@ export abstract class Pass<P> {
     const vertexShader = this.createVertexShader()
     const fragmentShader = this.createFragmentShader()
 
-    // TODO Debug only if config set
-    console.log('='.repeat(debugSeparatorLength))
-    console.log(this.constructor.name)
-    console.log('-'.repeat(debugSeparatorLength))
-    console.log(vertexShader)
-    console.log('-'.repeat(debugSeparatorLength))
-    console.log(fragmentShader)
+    if (Pass.logShaders) {
+      console.log('='.repeat(debugSeparatorLength))
+      console.log(this.constructor.name)
+      console.log('-'.repeat(debugSeparatorLength))
+      console.log(vertexShader)
+      console.log('-'.repeat(debugSeparatorLength))
+      console.log(fragmentShader)
+    }
 
     this.programInfo = twgl.createProgramInfo(gl, [
       vertexShader,

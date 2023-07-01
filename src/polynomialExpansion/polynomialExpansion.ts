@@ -9,6 +9,7 @@ import { CorrelationXPass } from './passes/correlationX'
 import { CorrelationY14Pass } from './passes/correlationY14'
 import { CorrelationY56Pass } from './passes/correlationY56'
 import { IntensityPass } from './passes/intensity'
+import { Pass } from './passes/pass'
 import { Kernels } from './types'
 
 export type PolynomialExpansionOptions = {
@@ -19,6 +20,9 @@ export type PolynomialExpansionOptions = {
 
   /** @default 0.15 * (kernelSize - 1) */
   sigma?: number
+
+  /** @default false */
+  logShaders?: boolean
 }
 
 const polynomialExpansion = (
@@ -53,6 +57,8 @@ const polynomialExpansion = (
   const textures = twgl.createTextures(gl, {
     signal: { src: signal },
   })
+
+  Pass.logShaders = options.logShaders ?? false
 
   const intensityPass = new IntensityPass(gl, bufferInfo, {
     lumaTransformRec: 601,
