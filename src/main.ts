@@ -1,12 +1,14 @@
-import { GUI } from 'lil-gui'
+import { Controller, GUI } from 'lil-gui'
 import Stats from 'stats.js'
+
+import { Pass } from './polynomialExpansion/passes/pass'
 
 const config = {
   x: 585,
   y: 387,
-  correlationX: new Array(3).fill(0),
-  correlationY: new Array(6).fill(0),
-  coefficients: new Array(6).fill(0),
+  correlX: new Array<number>(3).fill(0),
+  correlY: new Array<number>(6).fill(0),
+  coeffs: new Array<number>(6).fill(0),
 }
 
 const stats = new Stats()
@@ -15,31 +17,28 @@ document.body.appendChild(stats.dom)
 
 const gui = new GUI()
 
-const xController = gui.add(config, 'x', 0).step(1)
-const yController = gui.add(config, 'y', 0).step(1)
+const x = gui.add(config, 'x', 0).step(1)
+const y = gui.add(config, 'y', 0).step(1)
 
-const separableCorrelationFolder = gui.addFolder('Separable correlation')
-const correlationXFolder = separableCorrelationFolder.addFolder('x direction')
-const correlationXControllers = Array.from({ length: 3 }, (_, i) =>
-  correlationXFolder.add(config.correlationX, `${i}`).disable()
-)
-const correlationYFolder = separableCorrelationFolder.addFolder('y direction')
-const correlationYControllers = Array.from({ length: 6 }, (_, i) =>
-  correlationYFolder.add(config.correlationY, `${i}`).disable()
-)
+const addControllers = (parent: GUI, title: string, array: number[]) => {
+  const folder = parent.addFolder(title)
+  return Array.from({ length: array.length }, (_, i) =>
+    folder.add(array, `${i}`).disable()
+  )
+}
 
-const coefficientsFolder = gui.addFolder('Resulting coefficients')
-const coefficientsControllers = Array.from({ length: 6 }, (_, i) =>
-  coefficientsFolder.add(config.coefficients, `${i}`).disable()
-)
+const correlFolder = gui.addFolder('Separable correlation')
+const correlX = addControllers(correlFolder, 'x direction', config.correlX)
+const correlY = addControllers(correlFolder, 'y direction', config.correlY)
+const coeffs = addControllers(gui, 'Resulting coefficients', config.coeffs)
 
 const image = document.querySelector('img')
 if (!image) {
   throw new Error('Image not found')
 }
 
-xController.max(image.naturalWidth)
-yController.max(image.naturalHeight)
+x.max(image.naturalWidth)
+y.max(image.naturalHeight)
 
 const canvas = document.querySelector('canvas')
 if (!canvas) {
@@ -51,29 +50,22 @@ const result = polynomialExpansion(image)
 
 const pixelData = new Float32Array(4)
 
-const readPixel = () => {
-  result.correlationXPass.readPixel(config.x, config.y, pixelData)
-  for (let i = 0; i < 3; i++) {
-    correlationXControllers[i].setValue(pixelData[i] * 255)
-  }
-  result.correlationY14Pass.readPixel(config.x, config.y, pixelData)
-  for (let i = 0; i < 4; i++) {
-    correlationYControllers[i].setValue(pixelData[i] * 255)
-  }
-  result.correlationY56Pass.readPixel(config.x, config.y, pixelData)
-  for (let i = 0; i < 2; i++) {
-    correlationYControllers[i + 4].setValue(pixelData[i] * 255)
-  }
-  result.coefficients14Pass.readPixel(config.x, config.y, pixelData)
-  for (let i = 0; i < 4; i++) {
-    coefficientsControllers[i].setValue(pixelData[i] * 255)
-  }
-  result.coefficients56Pass.readPixel(config.x, config.y, pixelData)
-  for (let i = 0; i < 2; i++) {
-    coefficientsControllers[i + 4].setValue(pixelData[i] * 255)
+const readPixel = <P>(pass: Pass<P>, controllers: Controller[], offset = 0) => {
+  pass.readPixel(config.x, config.y, pixelData)
+  const n = Math.min(4, controllers.length - offset)
+  for (let i = 0; i < n; i++) {
+    controllers[i + offset].setValue(pixelData[i] * 255)
   }
 }
 
-xController.onChange(readPixel)
-yController.onChange(readPixel)
-readPixel()
+const update = () => {
+  readPixel(result.correlationXPass, correlX)
+  readPixel(result.correlationY14Pass, correlY)
+  readPixel(result.correlationY56Pass, correlY, 4)
+  readPixel(result.coefficients14Pass, coeffs)
+  readPixel(result.coefficients56Pass, coeffs, 4)
+}
+
+x.onChange(update)
+y.onChange(update)
+update()
