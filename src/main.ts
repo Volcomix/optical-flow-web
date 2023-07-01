@@ -1,10 +1,6 @@
 import { GUI } from 'lil-gui'
 import Stats from 'stats.js'
 
-import polynomialExpansion from './polynomialExpansion'
-
-import './style.css'
-
 const stats = new Stats()
 stats.showPanel(0)
 document.body.appendChild(stats.dom)
@@ -22,4 +18,5 @@ if (!canvas) {
   throw new Error('Canvas not found')
 }
 
-polynomialExpansion(image)
+const { default: polynomialExpansion } = await import('./polynomialExpansion')
+polynomialExpansion(image, { canvas })

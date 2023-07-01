@@ -1,5 +1,5 @@
 body {
-  max-height: 100vh;
+  height: 100vh;
   margin: 0;
   display: grid;
   grid-template-rows: 1fr 1fr;
