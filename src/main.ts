@@ -3,22 +3,20 @@ import Stats from 'stats.js'
 
 import { Pass } from './polynomialExpansion/passes/pass'
 
-const config = {
-  x: 585,
-  y: 387,
-  correlX: new Array<number>(3).fill(0),
-  correlY: new Array<number>(6).fill(0),
-  coeffs: new Array<number>(6).fill(0),
-}
-
 const stats = new Stats()
 stats.showPanel(0)
 document.body.appendChild(stats.dom)
 
 const gui = new GUI()
 
-const x = gui.add(config, 'x', 0).step(1)
-const y = gui.add(config, 'y', 0).step(1)
+const config = {
+  x: 585,
+  y: 387,
+  correlX: new Array<number>(3).fill(0),
+  correlY: new Array<number>(6).fill(0),
+  coeffs: new Array<number>(6).fill(0),
+  reset: () => gui.reset(),
+}
 
 const addControllers = (parent: GUI, title: string, array: number[]) => {
   const folder = parent.addFolder(title)
@@ -27,6 +25,9 @@ const addControllers = (parent: GUI, title: string, array: number[]) => {
   )
 }
 
+const x = gui.add(config, 'x', 0).step(1)
+const y = gui.add(config, 'y', 0).step(1)
+const reset = gui.add(config, 'reset')
 const correlFolder = gui.addFolder('Separable correlation')
 const correlX = addControllers(correlFolder, 'x direction', config.correlX)
 const correlY = addControllers(correlFolder, 'y direction', config.correlY)
@@ -68,4 +69,5 @@ const update = () => {
 
 x.onChange(update)
 y.onChange(update)
+reset.onChange(update)
 update()
