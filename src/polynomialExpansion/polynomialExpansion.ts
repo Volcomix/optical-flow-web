@@ -11,16 +11,15 @@ import { CorrelationY56Pass } from './passes/correlationY56'
 import { IntensityPass } from './passes/intensity'
 import { Kernels } from './types'
 
-const debugPoint = {
-  x: 585,
-  y: 387,
-}
+export type PolynomialExpansionOptions = {
+  canvas?: HTMLCanvasElement
 
-export type PolynomialExpansionOptions = Partial<{
-  canvas: HTMLCanvasElement
-  kernelSize: number
-  sigma: number
-}>
+  /** @default 11 */
+  kernelSize?: number
+
+  /** @default 0.15 * (kernelSize - 1) */
+  sigma?: number
+}
 
 const polynomialExpansion = (
   signal: HTMLImageElement,
@@ -63,121 +62,56 @@ const polynomialExpansion = (
   const correlationXPass = new CorrelationXPass(gl, bufferInfo, {
     kernels,
     width: canvas.width,
-    uniforms: { signal: intensityPass.attachment },
+    uniforms: { signal: intensityPass.texture },
     frameBuffer: { internalFormat: gl.RGBA32F },
   })
   const correlationY14Pass = new CorrelationY14Pass(gl, bufferInfo, {
     kernels,
     height: canvas.height,
-    uniforms: { correlation: correlationXPass.attachment },
+    uniforms: { correlation: correlationXPass.texture },
     frameBuffer: { internalFormat: gl.RGBA32F },
   })
   const correlationY56Pass = new CorrelationY56Pass(gl, bufferInfo, {
     kernels,
     height: canvas.height,
-    uniforms: { correlation: correlationXPass.attachment },
+    uniforms: { correlation: correlationXPass.texture },
     frameBuffer: { internalFormat: gl.RGBA32F },
   })
   const coefficients14Pass = new Coefficients14Pass(gl, bufferInfo, {
     invG,
     uniforms: {
-      correlation14: correlationY14Pass.attachment,
-      correlation56: correlationY56Pass.attachment,
+      correlation14: correlationY14Pass.texture,
+      correlation56: correlationY56Pass.texture,
     },
     frameBuffer: { internalFormat: gl.RGBA32F },
   })
   const coefficients56Pass = new Coefficients56Pass(gl, bufferInfo, {
     invG,
     uniforms: {
-      correlation14: correlationY14Pass.attachment,
-      correlation56: correlationY56Pass.attachment,
+      correlation14: correlationY14Pass.texture,
+      correlation56: correlationY56Pass.texture,
     },
     frameBuffer: { internalFormat: gl.RGBA32F },
   })
-
-  const correlationXData = new Float32Array(4)
-  const correlationY14Data = new Float32Array(4)
-  const correlationY56Data = new Float32Array(4)
-  const coefficients14Data = new Float32Array(4)
-  const coefficients56Data = new Float32Array(4)
 
   // Render
   gl.viewport(0, 0, canvas.width, canvas.height)
 
   intensityPass.render()
   correlationXPass.render()
-
-  gl.readPixels(
-    debugPoint.x,
-    debugPoint.y,
-    1,
-    1,
-    gl.RGBA,
-    gl.FLOAT,
-    correlationXData
-  )
-  console.log(
-    'Separable correlation - x direction',
-    [...correlationXData.slice(0, -1)].map((v) => Number((v * 255).toFixed(3)))
-  )
-
   correlationY14Pass.render()
-  gl.readPixels(
-    debugPoint.x,
-    debugPoint.y,
-    1,
-    1,
-    gl.RGBA,
-    gl.FLOAT,
-    correlationY14Data
-  )
-
   correlationY56Pass.render()
-  gl.readPixels(
-    debugPoint.x,
-    debugPoint.y,
-    1,
-    1,
-    gl.RGBA,
-    gl.FLOAT,
-    correlationY56Data
-  )
-
-  console.log(
-    'Separable correlation - y direction',
-    [...correlationY14Data, ...correlationY56Data.slice(0, 2)].map((v) =>
-      Number((v * 255).toFixed(3))
-    )
-  )
-
   coefficients14Pass.render()
-  gl.readPixels(
-    debugPoint.x,
-    debugPoint.y,
-    1,
-    1,
-    gl.RGBA,
-    gl.FLOAT,
-    coefficients14Data
-  )
-
   coefficients56Pass.render()
-  gl.readPixels(
-    debugPoint.x,
-    debugPoint.y,
-    1,
-    1,
-    gl.RGBA,
-    gl.FLOAT,
-    coefficients56Data
-  )
 
-  console.log(
-    'Resulting coefficients',
-    [...coefficients14Data, ...coefficients56Data.slice(0, 2)].map((v) =>
-      Number((v * 255).toFixed(3))
-    )
-  )
+  return {
+    intensityPass,
+    correlationXPass,
+    correlationY14Pass,
+    correlationY56Pass,
+    coefficients14Pass,
+    coefficients56Pass,
+  }
 }
 
 const precomputeG = (applicability: number[]) => {

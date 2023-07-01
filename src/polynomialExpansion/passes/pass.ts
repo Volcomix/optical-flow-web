@@ -2,11 +2,10 @@ import * as twgl from 'twgl.js'
 
 const debugSeparatorLength = 80
 
-export type PassOptions = Partial<{
-  flipY: boolean
-  frameBuffer: twgl.AttachmentOptions
-  uniforms: { [key: string]: unknown }
-}>
+export type PassProps = {
+  frameBuffer?: twgl.AttachmentOptions
+  uniforms?: { [key: string]: unknown }
+}
 
 export abstract class Pass<P> {
   private programInfo: twgl.ProgramInfo
@@ -15,7 +14,7 @@ export abstract class Pass<P> {
   constructor(
     private gl: WebGL2RenderingContext,
     private bufferInfo: twgl.BufferInfo,
-    protected props: PassOptions & P
+    protected props: PassProps & P
   ) {
     const vertexShader = this.createVertexShader()
     const fragmentShader = this.createFragmentShader()
@@ -41,10 +40,6 @@ export abstract class Pass<P> {
   }
 
   private createVertexShader() {
-    const position = this.props.flipY
-      ? 'inPosition * vec2(1, -1)'
-      : 'inPosition'
-
     return /* glsl */ `#version 300 es
      
       in vec2 inPosition;
@@ -53,7 +48,7 @@ export abstract class Pass<P> {
       out vec2 texCoord;
      
       void main() {
-        gl_Position = vec4(${position}, 0, 1);
+        gl_Position = vec4(inPosition, 0, 1);
         texCoord = inTexCoord;
       }
     `
@@ -74,7 +69,15 @@ export abstract class Pass<P> {
     twgl.drawBufferInfo(this.gl, this.bufferInfo)
   }
 
-  get attachment() {
-    return this.frameBufferInfo?.attachments[0]
+  readPixel(x: number, y: number, dstData: ArrayBufferView | null) {
+    this.gl.bindFramebuffer(
+      this.gl.FRAMEBUFFER,
+      this.frameBufferInfo?.framebuffer ?? null
+    )
+    this.gl.readPixels(x, y, 1, 1, this.gl.RGBA, this.gl.FLOAT, dstData)
+  }
+
+  get texture() {
+    return this.frameBufferInfo?.attachments[0] as WebGLTexture
   }
 }
