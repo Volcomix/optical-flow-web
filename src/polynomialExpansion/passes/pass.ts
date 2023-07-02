@@ -2,12 +2,18 @@ import * as twgl from 'twgl.js'
 
 const debugSeparatorLength = 80
 
-export type PassProps<T extends string> = {
+export type PassProps<T extends string, U extends Record<string, unknown>> = {
+  uniforms: U extends Record<string, never>
+    ? Record<T, WebGLTexture>
+    : U & Record<T, WebGLTexture>
   frameBuffer?: twgl.AttachmentOptions
-  uniforms: { [textureName in T]: WebGLTexture }
 }
 
-export abstract class Pass<P, T extends string> {
+export abstract class Pass<
+  P,
+  T extends string,
+  U extends Record<string, unknown> = Record<string, never>
+> {
   static logShaders = false
 
   private programInfo: twgl.ProgramInfo
@@ -16,7 +22,7 @@ export abstract class Pass<P, T extends string> {
   constructor(
     private gl: WebGL2RenderingContext,
     private bufferInfo: twgl.BufferInfo,
-    protected props: PassProps<T> & P
+    protected props: PassProps<T, U> & P
   ) {
     const vertexShader = this.createVertexShader()
     const fragmentShader = this.createFragmentShader()
@@ -43,6 +49,10 @@ export abstract class Pass<P, T extends string> {
   }
 
   private createVertexShader() {
+    const position = this.props.frameBuffer
+      ? 'inPosition'
+      : 'inPosition * vec2(1, -1)'
+
     return /* glsl */ `#version 300 es
      
       in vec2 inPosition;
@@ -51,7 +61,7 @@ export abstract class Pass<P, T extends string> {
       out vec2 texCoord;
      
       void main() {
-        gl_Position = vec4(inPosition, 0, 1);
+        gl_Position = vec4(${position}, 0, 1);
         texCoord = inTexCoord;
       }
     `

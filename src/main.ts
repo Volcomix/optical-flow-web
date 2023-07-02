@@ -1,5 +1,6 @@
 import { Controller, GUI } from 'lil-gui'
 import Stats from 'stats.js'
+import * as twgl from 'twgl.js'
 
 import { PolynomialExpansionResult } from './polynomialExpansion'
 import { Pass } from './polynomialExpansion/passes/pass'
@@ -70,8 +71,8 @@ let imageMarginVert: number
 const updateMarkedPoint = () => {
   markedPoint.style.top = `${imageMarginVert + config.y * imageScale}px`
   markedPoint.style.left = `${imageMarginHori + config.x * imageScale}px`
-  markedPoint.style.width = `${config.kernelSize}px`
-  markedPoint.style.height = `${config.kernelSize}px`
+  markedPoint.style.width = `${config.kernelSize * imageScale}px`
+  markedPoint.style.height = `${config.kernelSize * imageScale}px`
 }
 
 new ResizeObserver((entries) => {
@@ -125,6 +126,70 @@ const { default: polynomialExpansion } = await import('./polynomialExpansion')
 let result: PolynomialExpansionResult
 const pixelData = new Float32Array(4)
 
+type OriginalSignalProps = {
+  signalWidth: number
+  signalHeight: number
+  kernelSize: number
+}
+
+type OriginalSignalUniforms = {
+  x?: number
+  y?: number
+}
+
+class OriginalSignal extends Pass<
+  OriginalSignalProps,
+  'signal',
+  OriginalSignalUniforms
+> {
+  set x(value: number) {
+    this.props.uniforms.x = value
+  }
+
+  set y(value: number) {
+    this.props.uniforms.y = value
+  }
+
+  protected createFragmentShader() {
+    const n = ((this.props.kernelSize - 1) / 2).toFixed(1)
+
+    const signalTexelWidth = 1 / this.props.signalWidth
+    const signalTexelHeight = 1 / this.props.signalHeight
+    const kernelTexelSize = 1 / this.props.kernelSize
+
+    return /* glsl */ `#version 300 es
+
+    precision highp float;
+
+    uniform sampler2D signal;
+    uniform float x;
+    uniform float y;
+
+    in vec2 texCoord;
+
+    out vec4 result;
+
+    void main() {
+      result = vec4(texture(signal,
+        (vec2(x, y) - ${n} + texCoord / ${kernelTexelSize}) * vec2(${signalTexelWidth}, ${signalTexelHeight})
+      ).r);
+    }
+    `
+  }
+}
+
+const gl = canvas.getContext('webgl2')
+if (!gl) {
+  throw new Error('WebGL 2 is not available')
+}
+
+const arrays = {
+  inPosition: [-1, -1, 0, 0, -1, 0, -1, 1, 0, -1, 1, 0, 0, -1, 0, 0, 1, 0],
+  inTexCoord: [0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1],
+}
+const bufferInfo = twgl.createBufferInfoFromArrays(gl, arrays)
+let originalSignal: OriginalSignal
+
 const readPixel = <P, T extends string>(
   pass: Pass<P, T>,
   controllers: Controller[],
@@ -141,7 +206,14 @@ const updateDisplay = () => {
   if (!updatesEnabled) {
     return
   }
+
+  gl.viewport(0, 0, canvas.width, canvas.height)
+  originalSignal.x = config.x
+  originalSignal.y = config.y
+  originalSignal.render()
+
   updateMarkedPoint()
+
   readPixel(result.correlationX, correlX)
   readPixel(result.correlationY14, correlY)
   readPixel(result.correlationY56, correlY, 4)
@@ -153,10 +225,23 @@ const computePolynomialExpansion = () => {
   if (!updatesEnabled) {
     return
   }
+
   result = polynomialExpansion(image, {
+    canvas,
     kernelSize: config.kernelSize,
     logShaders: config.logShaders,
   })
+
+  canvas.width = config.kernelSize * 2
+  canvas.height = config.kernelSize
+
+  originalSignal = new OriginalSignal(gl, bufferInfo, {
+    signalWidth: image.naturalWidth,
+    signalHeight: image.naturalHeight,
+    kernelSize: config.kernelSize,
+    uniforms: { signal: result.intensity.texture },
+  })
+
   updateDisplay()
 }
 
