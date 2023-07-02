@@ -126,21 +126,69 @@ const { default: polynomialExpansion } = await import('./polynomialExpansion')
 let result: PolynomialExpansionResult
 const pixelData = new Float32Array(4)
 
-type OriginalSignalProps = {
+type SignalProps = {
   signalWidth: number
   signalHeight: number
   kernelSize: number
 }
 
-type OriginalSignalUniforms = {
+type SignalUniforms = {
   x?: number
   y?: number
 }
 
-class OriginalSignal extends Pass<
-  OriginalSignalProps,
-  'signal',
-  OriginalSignalUniforms
+class Signal extends Pass<SignalProps, 'signal', SignalUniforms> {
+  set x(value: number) {
+    this.props.uniforms.x = value
+  }
+
+  set y(value: number) {
+    this.props.uniforms.y = value
+  }
+
+  protected createFragmentShader() {
+    const n = ((this.props.kernelSize - 1) / 2).toFixed(1)
+
+    const signalTexelWidth = 1 / this.props.signalWidth
+    const signalTexelHeight = 1 / this.props.signalHeight
+    const kernelTexelSize = 1 / this.props.kernelSize
+
+    return /* glsl */ `#version 300 es
+
+      precision highp float;
+
+      uniform sampler2D signal;
+      uniform float x;
+      uniform float y;
+
+      in vec2 texCoord;
+
+      out vec4 result;
+
+      void main() {
+        result = vec4(texture(signal,
+          (vec2(x, y) - ${n} + texCoord / ${kernelTexelSize}) * vec2(${signalTexelWidth}, ${signalTexelHeight})
+        ).r);
+      }
+    `
+  }
+}
+
+type ProjectionProps = {
+  signalWidth: number
+  signalHeight: number
+  kernelSize: number
+}
+
+type ProjectionUniforms = {
+  x?: number
+  y?: number
+}
+
+class Projection extends Pass<
+  ProjectionProps,
+  'coefficients14' | 'coefficients56',
+  ProjectionUniforms
 > {
   set x(value: number) {
     this.props.uniforms.x = value
@@ -159,21 +207,34 @@ class OriginalSignal extends Pass<
 
     return /* glsl */ `#version 300 es
 
-    precision highp float;
+      precision highp float;
 
-    uniform sampler2D signal;
-    uniform float x;
-    uniform float y;
+      uniform sampler2D coefficients14;
+      uniform sampler2D coefficients56;
+      uniform float x;
+      uniform float y;
 
-    in vec2 texCoord;
+      in vec2 texCoord;
 
-    out vec4 result;
+      out vec4 result;
 
-    void main() {
-      result = vec4(texture(signal,
-        (vec2(x, y) - ${n} + texCoord / ${kernelTexelSize}) * vec2(${signalTexelWidth}, ${signalTexelHeight})
-      ).r);
-    }
+      void main() {
+        vec2 kernelCoord = texCoord / ${kernelTexelSize} - ${n};
+        vec2 signalCoord = vec2(x * ${signalTexelWidth}, y * ${signalTexelHeight});
+
+        result = vec4(
+          dot(texture(coefficients14, signalCoord), vec4(
+            1,
+            kernelCoord.x,
+            kernelCoord.y,
+            kernelCoord.x * kernelCoord.x
+          )) +
+          dot(texture(coefficients56, signalCoord).rg, vec2(
+            kernelCoord.y * kernelCoord.y,
+            kernelCoord.x * kernelCoord.y
+          ))
+        );
+      }
     `
   }
 }
@@ -183,12 +244,19 @@ if (!gl) {
   throw new Error('WebGL 2 is not available')
 }
 
-const arrays = {
+const signalArrays = {
   inPosition: [-1, -1, 0, 0, -1, 0, -1, 1, 0, -1, 1, 0, 0, -1, 0, 0, 1, 0],
   inTexCoord: [0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1],
 }
-const bufferInfo = twgl.createBufferInfoFromArrays(gl, arrays)
-let originalSignal: OriginalSignal
+const signalBuffInfo = twgl.createBufferInfoFromArrays(gl, signalArrays)
+let signal: Signal
+
+const projectionArrays = {
+  inPosition: [0, -1, 0, 1, -1, 0, 0, 1, 0, 0, 1, 0, 1, -1, 0, 1, 1, 0],
+  inTexCoord: [0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1],
+}
+const projectionBuffInfo = twgl.createBufferInfoFromArrays(gl, projectionArrays)
+let projection: Projection
 
 const readPixel = <P, T extends string>(
   pass: Pass<P, T>,
@@ -208,9 +276,14 @@ const updateDisplay = () => {
   }
 
   gl.viewport(0, 0, canvas.width, canvas.height)
-  originalSignal.x = config.x
-  originalSignal.y = config.y
-  originalSignal.render()
+
+  signal.x = config.x
+  signal.y = config.y
+  signal.render()
+
+  projection.x = config.x
+  projection.y = config.y
+  projection.render()
 
   updateMarkedPoint()
 
@@ -235,11 +308,21 @@ const computePolynomialExpansion = () => {
   canvas.width = config.kernelSize * 2
   canvas.height = config.kernelSize
 
-  originalSignal = new OriginalSignal(gl, bufferInfo, {
+  signal = new Signal(gl, signalBuffInfo, {
     signalWidth: image.naturalWidth,
     signalHeight: image.naturalHeight,
     kernelSize: config.kernelSize,
     uniforms: { signal: result.intensity.texture },
+  })
+
+  projection = new Projection(gl, projectionBuffInfo, {
+    signalWidth: image.naturalWidth,
+    signalHeight: image.naturalHeight,
+    kernelSize: config.kernelSize,
+    uniforms: {
+      coefficients14: result.coefficients14.texture,
+      coefficients56: result.coefficients56.texture,
+    },
   })
 
   updateDisplay()
