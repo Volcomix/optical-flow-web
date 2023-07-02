@@ -127,8 +127,6 @@ let result: PolynomialExpansionResult
 const pixelData = new Float32Array(4)
 
 type SignalProps = {
-  signalWidth: number
-  signalHeight: number
   kernelSize: number
 }
 
@@ -148,10 +146,7 @@ class Signal extends Pass<SignalProps, 'signal', SignalUniforms> {
 
   protected createFragmentShader() {
     const n = ((this.props.kernelSize - 1) / 2).toFixed(1)
-
-    const signalTexelWidth = 1 / this.props.signalWidth
-    const signalTexelHeight = 1 / this.props.signalHeight
-    const kernelTexelSize = 1 / this.props.kernelSize
+    const kernelSize = this.props.kernelSize.toFixed(1)
 
     return /* glsl */ `#version 300 es
 
@@ -166,17 +161,15 @@ class Signal extends Pass<SignalProps, 'signal', SignalUniforms> {
       out vec4 result;
 
       void main() {
-        result = vec4(texture(signal,
-          (vec2(x, y) - ${n} + texCoord / ${kernelTexelSize}) * vec2(${signalTexelWidth}, ${signalTexelHeight})
-        ).r);
+        ivec2 signalCoord = ivec2(x, y);
+        ivec2 kernelCoord = ivec2(texCoord * ${kernelSize} - ${n});
+        result = vec4(texelFetch(signal, signalCoord + kernelCoord, 0).r);
       }
     `
   }
 }
 
 type ProjectionProps = {
-  signalWidth: number
-  signalHeight: number
   kernelSize: number
 }
 
@@ -200,10 +193,7 @@ class Projection extends Pass<
 
   protected createFragmentShader() {
     const n = ((this.props.kernelSize - 1) / 2).toFixed(1)
-
-    const signalTexelWidth = 1 / this.props.signalWidth
-    const signalTexelHeight = 1 / this.props.signalHeight
-    const kernelTexelSize = 1 / this.props.kernelSize
+    const kernelSize = this.props.kernelSize.toFixed(1)
 
     return /* glsl */ `#version 300 es
 
@@ -211,25 +201,25 @@ class Projection extends Pass<
 
       uniform sampler2D coefficients14;
       uniform sampler2D coefficients56;
-      uniform float x;
-      uniform float y;
+      uniform int x;
+      uniform int y;
 
       in vec2 texCoord;
 
       out vec4 result;
 
       void main() {
-        vec2 kernelCoord = texCoord / ${kernelTexelSize} - ${n};
-        vec2 signalCoord = vec2(x * ${signalTexelWidth}, y * ${signalTexelHeight});
+        ivec2 signalCoord = ivec2(x, y);
+        vec2 kernelCoord = texCoord * ${kernelSize} - ${n};
 
         result = vec4(
-          dot(texture(coefficients14, signalCoord), vec4(
+          dot(texelFetch(coefficients14, signalCoord, 0), vec4(
             1,
             kernelCoord.x,
             kernelCoord.y,
             kernelCoord.x * kernelCoord.x
           )) +
-          dot(texture(coefficients56, signalCoord).rg, vec2(
+          dot(texelFetch(coefficients56, signalCoord, 0).rg, vec2(
             kernelCoord.y * kernelCoord.y,
             kernelCoord.x * kernelCoord.y
           ))
@@ -309,15 +299,11 @@ const computePolynomialExpansion = () => {
   canvas.height = config.kernelSize
 
   signal = new Signal(gl, signalBuffInfo, {
-    signalWidth: image.naturalWidth,
-    signalHeight: image.naturalHeight,
     kernelSize: config.kernelSize,
     uniforms: { signal: result.intensity.texture },
   })
 
   projection = new Projection(gl, projectionBuffInfo, {
-    signalWidth: image.naturalWidth,
-    signalHeight: image.naturalHeight,
     kernelSize: config.kernelSize,
     uniforms: {
       coefficients14: result.coefficients14.texture,
