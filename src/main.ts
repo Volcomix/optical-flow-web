@@ -16,6 +16,7 @@ const config = {
   x: 585,
   y: 387,
   kernelSize: 11,
+  logShaders: true,
   correlX: new Array<number>(3).fill(0),
   correlY: new Array<number>(6).fill(0),
   coeffs: new Array<number>(6).fill(0),
@@ -29,15 +30,12 @@ const addControllers = (parent: GUI, title: string, array: number[]) => {
   )
 }
 
+const kernSizes = Array.from({ length: 50 }, (_, i) => i * 2 + 1)
+
 const x = gui.add(config, 'x', 0).step(1)
 const y = gui.add(config, 'y', 0).step(1)
-const kernelSize = gui
-  .add(
-    config,
-    'kernelSize',
-    Array.from({ length: 50 }, (_, i) => i * 2 + 1)
-  )
-  .name('kernel size')
+const kernelSize = gui.add(config, 'kernelSize', kernSizes).name('kernel size')
+const logShaders = gui.add(config, 'logShaders').name('log shaders')
 const reset = gui.add(config, 'reset')
 const correlFolder = gui.addFolder('Separable correlation')
 const correlX = addControllers(correlFolder, 'x direction', config.correlX)
@@ -129,7 +127,7 @@ const readPixel = (pass: Pass, controllers: Controller[], offset = 0) => {
   }
 }
 
-const update = () => {
+const updateDisplay = () => {
   updateMarkedPoint()
   readPixel(result.correlationXPass, correlX)
   readPixel(result.correlationY14Pass, correlY)
@@ -141,14 +139,15 @@ const update = () => {
 const computePolynomialExpansion = () => {
   result = polynomialExpansion(image, {
     kernelSize: config.kernelSize,
-    logShaders: true,
+    logShaders: config.logShaders,
   })
-  update()
+  updateDisplay()
 }
 
-x.onChange(update)
-y.onChange(update)
+x.onChange(updateDisplay)
+y.onChange(updateDisplay)
 kernelSize.onChange(computePolynomialExpansion)
-reset.onChange(update) // TODO Prevent multiple updates
+logShaders.onChange(computePolynomialExpansion)
+reset.onChange(updateDisplay) // TODO Prevent multiple updates
 
 computePolynomialExpansion()
