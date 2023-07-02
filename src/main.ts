@@ -36,8 +36,7 @@ const addControllers = (parent: GUI, title: string, array: number[]) => {
   )
 }
 
-// FIXME Error when selecting kernelSize 1
-const kernSizes = Array.from({ length: 50 }, (_, i) => i * 2 + 1)
+const kernSizes = Array.from({ length: 49 }, (_, i) => i * 2 + 3)
 
 const x = gui.add(config, 'x', 0).step(1)
 const y = gui.add(config, 'y', 0).step(1)
