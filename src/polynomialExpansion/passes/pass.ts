@@ -4,10 +4,10 @@ const debugSeparatorLength = 80
 
 export type PassProps = {
   frameBuffer?: twgl.AttachmentOptions
-  uniforms?: { [key: string]: unknown }
+  uniforms?: { [key: string]: unknown } // TODO Improve typings
 }
 
-export abstract class Pass<P> {
+export abstract class Pass<P = unknown> {
   static logShaders = false
 
   private programInfo: twgl.ProgramInfo

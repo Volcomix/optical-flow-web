@@ -1,0 +1,10 @@
+.signal_container {
+  position: relative;
+}
+
+.marked-point {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border: 1px solid red;
+  pointer-events: none;
+}

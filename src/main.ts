@@ -1,7 +1,10 @@
 import { Controller, GUI } from 'lil-gui'
 import Stats from 'stats.js'
 
+import { PolynomialExpansionResult } from './polynomialExpansion'
 import { Pass } from './polynomialExpansion/passes/pass'
+
+import './style.css'
 
 const stats = new Stats()
 stats.showPanel(0)
@@ -12,6 +15,7 @@ const gui = new GUI()
 const config = {
   x: 585,
   y: 387,
+  kernelSize: 11,
   correlX: new Array<number>(3).fill(0),
   correlY: new Array<number>(6).fill(0),
   coeffs: new Array<number>(6).fill(0),
@@ -27,6 +31,13 @@ const addControllers = (parent: GUI, title: string, array: number[]) => {
 
 const x = gui.add(config, 'x', 0).step(1)
 const y = gui.add(config, 'y', 0).step(1)
+const kernelSize = gui
+  .add(
+    config,
+    'kernelSize',
+    Array.from({ length: 50 }, (_, i) => i * 2 + 1)
+  )
+  .name('kernel size')
 const reset = gui.add(config, 'reset')
 const correlFolder = gui.addFolder('Separable correlation')
 const correlX = addControllers(correlFolder, 'x direction', config.correlX)
@@ -55,6 +66,8 @@ let imageMarginVert: number
 const updateMarkedPoint = () => {
   markedPoint.style.top = `${imageMarginVert + config.y * imageScale}px`
   markedPoint.style.left = `${imageMarginHori + config.x * imageScale}px`
+  markedPoint.style.width = `${config.kernelSize}px`
+  markedPoint.style.height = `${config.kernelSize}px`
 }
 
 new ResizeObserver((entries) => {
@@ -104,11 +117,11 @@ if (!canvas) {
 }
 
 const { default: polynomialExpansion } = await import('./polynomialExpansion')
-const result = polynomialExpansion(image, { logShaders: true })
 
+let result: PolynomialExpansionResult
 const pixelData = new Float32Array(4)
 
-const readPixel = <P>(pass: Pass<P>, controllers: Controller[], offset = 0) => {
+const readPixel = (pass: Pass, controllers: Controller[], offset = 0) => {
   pass.readPixel(config.x, config.y, pixelData)
   const n = Math.min(4, controllers.length - offset)
   for (let i = 0; i < n; i++) {
@@ -125,7 +138,17 @@ const update = () => {
   readPixel(result.coefficients56Pass, coeffs, 4)
 }
 
+const computePolynomialExpansion = () => {
+  result = polynomialExpansion(image, {
+    kernelSize: config.kernelSize,
+    logShaders: true,
+  })
+  update()
+}
+
 x.onChange(update)
 y.onChange(update)
-reset.onChange(update)
-update()
+kernelSize.onChange(computePolynomialExpansion)
+reset.onChange(update) // TODO Prevent multiple updates
+
+computePolynomialExpansion()

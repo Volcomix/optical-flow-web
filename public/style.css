@@ -13,13 +13,3 @@ canvas {
   min-height: 0;
   object-fit: contain;
 }
-
-.signal_container {
-  position: relative;
-}
-
-.marked-point {
-  position: absolute;
-  border: 1px solid red;
-  pointer-events: none;
-}

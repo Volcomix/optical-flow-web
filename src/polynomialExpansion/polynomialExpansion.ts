@@ -25,10 +25,19 @@ export type PolynomialExpansionOptions = {
   logShaders?: boolean
 }
 
+export type PolynomialExpansionResult = {
+  intensityPass: Pass
+  correlationXPass: Pass
+  correlationY14Pass: Pass
+  correlationY56Pass: Pass
+  coefficients14Pass: Pass
+  coefficients56Pass: Pass
+}
+
 const polynomialExpansion = (
   signal: HTMLImageElement,
   options: PolynomialExpansionOptions = {}
-) => {
+): PolynomialExpansionResult => {
   let canvas: HTMLCanvasElement | OffscreenCanvas
   if (options.canvas) {
     canvas = options.canvas
