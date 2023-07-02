@@ -2,11 +2,11 @@ import { Pass } from './pass'
 
 export type LumaTransformRec = 709 | 601
 
-export type IntensityPassProps = {
+export type IntensityProps = {
   lumaTransformRec?: LumaTransformRec
 }
 
-export class IntensityPass extends Pass<IntensityPassProps, 'signal'> {
+export class Intensity extends Pass<IntensityProps, 'signal'> {
   protected createFragmentShader() {
     const coeffs = (
       this.props.lumaTransformRec === 601

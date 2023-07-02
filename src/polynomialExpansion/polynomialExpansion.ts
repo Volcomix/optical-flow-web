@@ -3,12 +3,12 @@ import * as twgl from 'twgl.js'
 
 import gaussian from '../gaussian'
 
-import { Coefficients14Pass } from './passes/coefficients14'
-import { Coefficients56Pass } from './passes/coefficients56'
-import { CorrelationXPass } from './passes/correlationX'
-import { CorrelationY14Pass } from './passes/correlationY14'
-import { CorrelationY56Pass } from './passes/correlationY56'
-import { IntensityPass } from './passes/intensity'
+import { Coefficients14 } from './passes/coefficients14'
+import { Coefficients56 } from './passes/coefficients56'
+import { CorrelationX } from './passes/correlationX'
+import { CorrelationY14 } from './passes/correlationY14'
+import { CorrelationY56 } from './passes/correlationY56'
+import { Intensity } from './passes/intensity'
 import { Pass } from './passes/pass'
 import { Kernels } from './types'
 
@@ -26,12 +26,12 @@ export type PolynomialExpansionOptions = {
 }
 
 export type PolynomialExpansionResult = {
-  intensityPass: IntensityPass
-  correlationXPass: CorrelationXPass
-  correlationY14Pass: CorrelationY14Pass
-  correlationY56Pass: CorrelationY56Pass
-  coefficients14Pass: Coefficients14Pass
-  coefficients56Pass: Coefficients56Pass
+  intensity: Intensity
+  correlationX: CorrelationX
+  correlationY14: CorrelationY14
+  correlationY56: CorrelationY56
+  coefficients14: Coefficients14
+  coefficients56: Coefficients56
 }
 
 const polynomialExpansion = (
@@ -69,42 +69,42 @@ const polynomialExpansion = (
 
   Pass.logShaders = options.logShaders ?? false
 
-  const intensityPass = new IntensityPass(gl, bufferInfo, {
+  const intensity = new Intensity(gl, bufferInfo, {
     lumaTransformRec: 601,
     uniforms: { signal: textures.signal },
     frameBuffer: { internalFormat: gl.R8 },
   })
-  const correlationXPass = new CorrelationXPass(gl, bufferInfo, {
+  const correlationX = new CorrelationX(gl, bufferInfo, {
     kernels,
     width: canvas.width,
-    uniforms: { signal: intensityPass.texture },
+    uniforms: { signal: intensity.texture },
     frameBuffer: { internalFormat: gl.RGBA32F },
   })
-  const correlationY14Pass = new CorrelationY14Pass(gl, bufferInfo, {
+  const correlationY14 = new CorrelationY14(gl, bufferInfo, {
     kernels,
     height: canvas.height,
-    uniforms: { correlation: correlationXPass.texture },
+    uniforms: { correlation: correlationX.texture },
     frameBuffer: { internalFormat: gl.RGBA32F },
   })
-  const correlationY56Pass = new CorrelationY56Pass(gl, bufferInfo, {
+  const correlationY56 = new CorrelationY56(gl, bufferInfo, {
     kernels,
     height: canvas.height,
-    uniforms: { correlation: correlationXPass.texture },
+    uniforms: { correlation: correlationX.texture },
     frameBuffer: { internalFormat: gl.RGBA32F },
   })
-  const coefficients14Pass = new Coefficients14Pass(gl, bufferInfo, {
+  const coefficients14 = new Coefficients14(gl, bufferInfo, {
     invG,
     uniforms: {
-      correlation14: correlationY14Pass.texture,
-      correlation56: correlationY56Pass.texture,
+      correlation14: correlationY14.texture,
+      correlation56: correlationY56.texture,
     },
     frameBuffer: { internalFormat: gl.RGBA32F },
   })
-  const coefficients56Pass = new Coefficients56Pass(gl, bufferInfo, {
+  const coefficients56 = new Coefficients56(gl, bufferInfo, {
     invG,
     uniforms: {
-      correlation14: correlationY14Pass.texture,
-      correlation56: correlationY56Pass.texture,
+      correlation14: correlationY14.texture,
+      correlation56: correlationY56.texture,
     },
     frameBuffer: { internalFormat: gl.RGBA32F },
   })
@@ -112,20 +112,20 @@ const polynomialExpansion = (
   // Render
   gl.viewport(0, 0, canvas.width, canvas.height)
 
-  intensityPass.render()
-  correlationXPass.render()
-  correlationY14Pass.render()
-  correlationY56Pass.render()
-  coefficients14Pass.render()
-  coefficients56Pass.render()
+  intensity.render()
+  correlationX.render()
+  correlationY14.render()
+  correlationY56.render()
+  coefficients14.render()
+  coefficients56.render()
 
   return {
-    intensityPass,
-    correlationXPass,
-    correlationY14Pass,
-    correlationY56Pass,
-    coefficients14Pass,
-    coefficients56Pass,
+    intensity,
+    correlationX,
+    correlationY14,
+    correlationY56,
+    coefficients14,
+    coefficients56,
   }
 }
 

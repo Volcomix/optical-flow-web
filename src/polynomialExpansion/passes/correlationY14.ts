@@ -2,15 +2,12 @@ import { Kernels } from '../types'
 
 import { Pass } from './pass'
 
-export type CorrelationY14PassProps = {
+export type CorrelationY14Props = {
   kernels: Kernels
   height: number
 }
 
-export class CorrelationY14Pass extends Pass<
-  CorrelationY14PassProps,
-  'correlation'
-> {
+export class CorrelationY14 extends Pass<CorrelationY14Props, 'correlation'> {
   protected createFragmentShader() {
     const n = (this.props.kernels.x.length - 1) / 2
 

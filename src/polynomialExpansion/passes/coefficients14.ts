@@ -1,11 +1,11 @@
 import { Pass } from './pass'
 
-export type Coefficients14PassProps = {
+export type Coefficients14Props = {
   invG: number[][]
 }
 
-export class Coefficients14Pass extends Pass<
-  Coefficients14PassProps,
+export class Coefficients14 extends Pass<
+  Coefficients14Props,
   'correlation14' | 'correlation56'
 > {
   protected createFragmentShader() {

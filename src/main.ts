@@ -142,11 +142,11 @@ const updateDisplay = () => {
     return
   }
   updateMarkedPoint()
-  readPixel(result.correlationXPass, correlX)
-  readPixel(result.correlationY14Pass, correlY)
-  readPixel(result.correlationY56Pass, correlY, 4)
-  readPixel(result.coefficients14Pass, coeffs)
-  readPixel(result.coefficients56Pass, coeffs, 4)
+  readPixel(result.correlationX, correlX)
+  readPixel(result.correlationY14, correlY)
+  readPixel(result.correlationY56, correlY, 4)
+  readPixel(result.coefficients14, coeffs)
+  readPixel(result.coefficients56, coeffs, 4)
 }
 
 const computePolynomialExpansion = () => {
