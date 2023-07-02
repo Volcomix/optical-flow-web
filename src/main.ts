@@ -41,6 +41,63 @@ if (!image) {
 x.max(image.naturalWidth)
 y.max(image.naturalHeight)
 
+const markedPoint = document.querySelector<HTMLDivElement>('.marked-point')
+if (!markedPoint) {
+  throw new Error('Marked point not found')
+}
+
+let imageWidth: number
+let imageHeight: number
+let imageScale: number
+let imageMarginHori: number
+let imageMarginVert: number
+
+const updateMarkedPoint = () => {
+  markedPoint.style.top = `${imageMarginVert + config.y * imageScale}px`
+  markedPoint.style.left = `${imageMarginHori + config.x * imageScale}px`
+}
+
+new ResizeObserver((entries) => {
+  for (const entry of entries) {
+    const [contentBoxSize] = entry.contentBoxSize
+    imageWidth = contentBoxSize.inlineSize
+    imageHeight = contentBoxSize.blockSize
+
+    const aspectRatio = imageWidth / imageHeight
+    const naturalAspectRatio = image.naturalWidth / image.naturalHeight
+
+    if (aspectRatio < naturalAspectRatio) {
+      imageScale = imageWidth / image.naturalWidth
+      imageMarginVert = (imageHeight - image.naturalHeight * imageScale) / 2
+      imageMarginHori = 0
+    } else {
+      imageScale = imageHeight / image.naturalHeight
+      imageMarginVert = 0
+      imageMarginHori = (imageWidth - image.naturalWidth * imageScale) / 2
+    }
+
+    updateMarkedPoint()
+  }
+}).observe(image)
+
+const handleImageMouseMove = (event: MouseEvent) => {
+  if (
+    !(event.buttons & 1) ||
+    event.clientX < imageMarginHori ||
+    event.clientX > imageWidth - imageMarginHori ||
+    event.clientY < imageMarginVert ||
+    event.clientY > imageHeight - imageMarginVert
+  ) {
+    return
+  }
+
+  x.setValue(Math.round((event.clientX - imageMarginHori) / imageScale))
+  y.setValue(Math.round((event.clientY - imageMarginVert) / imageScale))
+}
+
+image.onmousedown = handleImageMouseMove
+image.onmousemove = handleImageMouseMove
+
 const canvas = document.querySelector('canvas')
 if (!canvas) {
   throw new Error('Canvas not found')
@@ -60,6 +117,7 @@ const readPixel = <P>(pass: Pass<P>, controllers: Controller[], offset = 0) => {
 }
 
 const update = () => {
+  updateMarkedPoint()
   readPixel(result.correlationXPass, correlX)
   readPixel(result.correlationY14Pass, correlY)
   readPixel(result.correlationY56Pass, correlY, 4)
