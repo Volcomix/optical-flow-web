@@ -128,6 +128,8 @@ const pixelData = new Float32Array(4)
 
 type SignalProps = {
   kernelSize: number
+  width: number
+  height: number
 }
 
 type SignalUniforms = {
@@ -146,6 +148,9 @@ class Signal extends Pass<SignalProps, 'signal', SignalUniforms> {
 
   protected createFragmentShader() {
     const n = ((this.props.kernelSize - 1) / 2).toFixed(1)
+
+    const texelWidth = 1 / this.props.width
+    const texelHeight = 1 / this.props.height
     const kernelSize = this.props.kernelSize.toFixed(1)
 
     return /* glsl */ `#version 300 es
@@ -161,9 +166,10 @@ class Signal extends Pass<SignalProps, 'signal', SignalUniforms> {
       out vec4 result;
 
       void main() {
-        ivec2 signalCoord = ivec2(x, y);
-        ivec2 kernelCoord = ivec2(texCoord * ${kernelSize} - ${n});
-        result = vec4(texelFetch(signal, signalCoord + kernelCoord, 0).r);
+        vec2 texelSize = vec2(${texelWidth}, ${texelHeight});
+        vec2 signalCoord = vec2(x, y);
+        vec2 kernelCoord = vec2(texCoord * ${kernelSize} - ${n});
+        result = vec4(texture(signal, (signalCoord + kernelCoord) * texelSize).r);
       }
     `
   }
@@ -300,6 +306,8 @@ const computePolynomialExpansion = () => {
 
   signal = new Signal(gl, signalBuffInfo, {
     kernelSize: config.kernelSize,
+    width: image.naturalWidth,
+    height: image.naturalHeight,
     uniforms: { signal: result.intensity.texture },
   })
 
