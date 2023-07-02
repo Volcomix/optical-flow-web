@@ -12,6 +12,8 @@ document.body.appendChild(stats.dom)
 
 const gui = new GUI()
 
+let updatesEnabled = true
+
 const config = {
   x: 585,
   y: 387,
@@ -20,7 +22,11 @@ const config = {
   correlX: new Array<number>(3).fill(0),
   correlY: new Array<number>(6).fill(0),
   coeffs: new Array<number>(6).fill(0),
-  reset: () => gui.reset(),
+  reset: () => {
+    updatesEnabled = false
+    gui.reset()
+    updatesEnabled = true
+  },
 }
 
 const addControllers = (parent: GUI, title: string, array: number[]) => {
@@ -30,6 +36,7 @@ const addControllers = (parent: GUI, title: string, array: number[]) => {
   )
 }
 
+// FIXME Error when selecting kernelSize 1
 const kernSizes = Array.from({ length: 50 }, (_, i) => i * 2 + 1)
 
 const x = gui.add(config, 'x', 0).step(1)
@@ -128,6 +135,9 @@ const readPixel = (pass: Pass, controllers: Controller[], offset = 0) => {
 }
 
 const updateDisplay = () => {
+  if (!updatesEnabled) {
+    return
+  }
   updateMarkedPoint()
   readPixel(result.correlationXPass, correlX)
   readPixel(result.correlationY14Pass, correlY)
@@ -137,6 +147,9 @@ const updateDisplay = () => {
 }
 
 const computePolynomialExpansion = () => {
+  if (!updatesEnabled) {
+    return
+  }
   result = polynomialExpansion(image, {
     kernelSize: config.kernelSize,
     logShaders: config.logShaders,
@@ -148,6 +161,6 @@ x.onChange(updateDisplay)
 y.onChange(updateDisplay)
 kernelSize.onChange(computePolynomialExpansion)
 logShaders.onChange(computePolynomialExpansion)
-reset.onChange(updateDisplay) // TODO Prevent multiple updates
+reset.onChange(computePolynomialExpansion)
 
 computePolynomialExpansion()
