@@ -26,12 +26,12 @@ export type PolynomialExpansionOptions = {
 }
 
 export type PolynomialExpansionResult = {
-  intensityPass: Pass
-  correlationXPass: Pass
-  correlationY14Pass: Pass
-  correlationY56Pass: Pass
-  coefficients14Pass: Pass
-  coefficients56Pass: Pass
+  intensityPass: IntensityPass
+  correlationXPass: CorrelationXPass
+  correlationY14Pass: CorrelationY14Pass
+  correlationY56Pass: CorrelationY56Pass
+  coefficients14Pass: Coefficients14Pass
+  coefficients56Pass: Coefficients56Pass
 }
 
 const polynomialExpansion = (

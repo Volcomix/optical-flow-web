@@ -125,7 +125,11 @@ const { default: polynomialExpansion } = await import('./polynomialExpansion')
 let result: PolynomialExpansionResult
 const pixelData = new Float32Array(4)
 
-const readPixel = (pass: Pass, controllers: Controller[], offset = 0) => {
+const readPixel = <P, T extends string>(
+  pass: Pass<P, T>,
+  controllers: Controller[],
+  offset = 0
+) => {
   pass.readPixel(config.x, config.y, pixelData)
   const n = Math.min(4, controllers.length - offset)
   for (let i = 0; i < n; i++) {

@@ -7,7 +7,7 @@ export type CorrelationXPassProps = {
   width: number
 }
 
-export class CorrelationXPass extends Pass<CorrelationXPassProps> {
+export class CorrelationXPass extends Pass<CorrelationXPassProps, 'signal'> {
   protected createFragmentShader() {
     const n = (this.props.kernels.x.length - 1) / 2
 

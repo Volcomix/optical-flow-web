@@ -7,7 +7,10 @@ export type CorrelationY14PassProps = {
   height: number
 }
 
-export class CorrelationY14Pass extends Pass<CorrelationY14PassProps> {
+export class CorrelationY14Pass extends Pass<
+  CorrelationY14PassProps,
+  'correlation'
+> {
   protected createFragmentShader() {
     const n = (this.props.kernels.x.length - 1) / 2
 

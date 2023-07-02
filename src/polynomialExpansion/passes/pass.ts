@@ -2,12 +2,12 @@ import * as twgl from 'twgl.js'
 
 const debugSeparatorLength = 80
 
-export type PassProps = {
+export type PassProps<T extends string> = {
   frameBuffer?: twgl.AttachmentOptions
-  uniforms?: { [key: string]: unknown } // TODO Improve typings
+  uniforms: { [textureName in T]: WebGLTexture }
 }
 
-export abstract class Pass<P = unknown> {
+export abstract class Pass<P, T extends string> {
   static logShaders = false
 
   private programInfo: twgl.ProgramInfo
@@ -16,7 +16,7 @@ export abstract class Pass<P = unknown> {
   constructor(
     private gl: WebGL2RenderingContext,
     private bufferInfo: twgl.BufferInfo,
-    protected props: PassProps & P
+    protected props: PassProps<T> & P
   ) {
     const vertexShader = this.createVertexShader()
     const fragmentShader = this.createFragmentShader()

@@ -4,7 +4,10 @@ export type Coefficients56PassProps = {
   invG: number[][]
 }
 
-export class Coefficients56Pass extends Pass<Coefficients56PassProps> {
+export class Coefficients56Pass extends Pass<
+  Coefficients56PassProps,
+  'correlation14' | 'correlation56'
+> {
   protected createFragmentShader() {
     return /* glsl */ `#version 300 es
     
