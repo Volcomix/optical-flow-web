@@ -25,5 +25,5 @@
   grid-template-columns: 1fr 1fr;
   justify-items: center;
   color: white;
-  text-shadow: 0 0 14px black;
+  mix-blend-mode: difference;
 }
