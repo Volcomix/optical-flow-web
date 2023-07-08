@@ -13,4 +13,5 @@ canvas {
   min-height: 0;
   object-fit: contain;
   image-rendering: pixelated;
+  user-select: none;
 }
