@@ -2,14 +2,21 @@ import * as twgl from 'twgl.js'
 
 const debugSeparatorLength = 80
 
-export type PassProps<T extends string, U extends Record<string, unknown>> = {
+export type ShaderPassProps<
+  T extends string,
+  U extends Record<string, unknown>,
+> = {
   uniforms: U extends Record<string, never>
     ? Record<T, WebGLTexture>
     : U & Record<T, WebGLTexture>
-  frameBuffer?: twgl.AttachmentOptions
+  frameBuffer?: {
+    attachment: twgl.AttachmentOptions
+    width: number
+    height: number
+  }
 }
 
-export abstract class Pass<
+export abstract class ShaderPass<
   P,
   T extends string,
   U extends Record<string, unknown> = Record<string, never>,
@@ -22,12 +29,12 @@ export abstract class Pass<
   constructor(
     private gl: WebGL2RenderingContext,
     private bufferInfo: twgl.BufferInfo,
-    protected props: PassProps<T, U> & P,
+    protected props: ShaderPassProps<T, U> & P,
   ) {
     const vertexShader = this.createVertexShader()
     const fragmentShader = this.createFragmentShader()
 
-    if (Pass.logShaders) {
+    if (ShaderPass.logShaders) {
       console.log('='.repeat(debugSeparatorLength))
       console.log(this.constructor.name)
       console.log('-'.repeat(debugSeparatorLength))
@@ -42,7 +49,12 @@ export abstract class Pass<
     ])
 
     if (props.frameBuffer) {
-      this.frameBufferInfo = twgl.createFramebufferInfo(gl, [props.frameBuffer])
+      this.frameBufferInfo = twgl.createFramebufferInfo(
+        gl,
+        [props.frameBuffer.attachment],
+        props.frameBuffer.width,
+        props.frameBuffer.height,
+      )
     } else {
       this.frameBufferInfo = null
     }

@@ -9,7 +9,7 @@ import { CorrelationX } from './passes/correlationX'
 import { CorrelationY14 } from './passes/correlationY14'
 import { CorrelationY56 } from './passes/correlationY56'
 import { Intensity } from './passes/intensity'
-import { Pass } from './passes/pass'
+import { ShaderPass } from './passes/shaderPass'
 import { Kernels } from './types'
 
 export type PolynomialExpansionOptions = {
@@ -38,14 +38,9 @@ const polynomialExpansion = (
   signal: HTMLImageElement,
   options: PolynomialExpansionOptions = {},
 ): PolynomialExpansionResult => {
-  let canvas: HTMLCanvasElement | OffscreenCanvas
-  if (options.canvas) {
-    canvas = options.canvas
-    canvas.width = signal.naturalWidth
-    canvas.height = signal.naturalHeight
-  } else {
-    canvas = new OffscreenCanvas(signal.naturalWidth, signal.naturalHeight)
-  }
+  const width = signal.naturalWidth
+  const height = signal.naturalHeight
+  const canvas = options.canvas ?? new OffscreenCanvas(width, height)
 
   const gl = canvas.getContext('webgl2')
   if (!gl) {
@@ -67,30 +62,30 @@ const polynomialExpansion = (
     signal: { src: signal },
   })
 
-  Pass.logShaders = options.logShaders ?? false
+  ShaderPass.logShaders = options.logShaders ?? false
 
   const intensity = new Intensity(gl, bufferInfo, {
     lumaTransformRec: 601,
     uniforms: { signal: textures.signal },
-    frameBuffer: { internalFormat: gl.R8 },
+    frameBuffer: { attachment: { internalFormat: gl.R8 }, width, height },
   })
   const correlationX = new CorrelationX(gl, bufferInfo, {
     kernels,
-    width: canvas.width,
+    width,
     uniforms: { signal: intensity.texture },
-    frameBuffer: { internalFormat: gl.RGBA32F },
+    frameBuffer: { attachment: { internalFormat: gl.RGBA32F }, width, height },
   })
   const correlationY14 = new CorrelationY14(gl, bufferInfo, {
     kernels,
-    height: canvas.height,
+    height,
     uniforms: { correlation: correlationX.texture },
-    frameBuffer: { internalFormat: gl.RGBA32F },
+    frameBuffer: { attachment: { internalFormat: gl.RGBA32F }, width, height },
   })
   const correlationY56 = new CorrelationY56(gl, bufferInfo, {
     kernels,
-    height: canvas.height,
+    height,
     uniforms: { correlation: correlationX.texture },
-    frameBuffer: { internalFormat: gl.RGBA32F },
+    frameBuffer: { attachment: { internalFormat: gl.RG32F }, width, height },
   })
   const coefficients14 = new Coefficients14(gl, bufferInfo, {
     invG,
@@ -98,7 +93,7 @@ const polynomialExpansion = (
       correlation14: correlationY14.texture,
       correlation56: correlationY56.texture,
     },
-    frameBuffer: { internalFormat: gl.RGBA32F },
+    frameBuffer: { attachment: { internalFormat: gl.RGBA32F }, width, height },
   })
   const coefficients56 = new Coefficients56(gl, bufferInfo, {
     invG,
@@ -106,11 +101,11 @@ const polynomialExpansion = (
       correlation14: correlationY14.texture,
       correlation56: correlationY56.texture,
     },
-    frameBuffer: { internalFormat: gl.RGBA32F },
+    frameBuffer: { attachment: { internalFormat: gl.RG32F }, width, height },
   })
 
   // Render
-  gl.viewport(0, 0, canvas.width, canvas.height)
+  gl.viewport(0, 0, width, height)
 
   intensity.render()
   correlationX.render()

@@ -1,4 +1,4 @@
-import { Pass } from './pass'
+import { ShaderPass } from './shaderPass'
 
 export type LumaTransformRec = 709 | 601
 
@@ -6,7 +6,7 @@ export type IntensityProps = {
   lumaTransformRec?: LumaTransformRec
 }
 
-export class Intensity extends Pass<IntensityProps, 'signal'> {
+export class Intensity extends ShaderPass<IntensityProps, 'signal'> {
   protected createFragmentShader() {
     const coeffs = (
       this.props.lumaTransformRec === 601

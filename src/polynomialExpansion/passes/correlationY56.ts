@@ -1,13 +1,16 @@
 import { Kernels } from '../types'
 
-import { Pass } from './pass'
+import { ShaderPass } from './shaderPass'
 
 export type CorrelationY56Props = {
   kernels: Kernels
   height: number
 }
 
-export class CorrelationY56 extends Pass<CorrelationY56Props, 'correlation'> {
+export class CorrelationY56 extends ShaderPass<
+  CorrelationY56Props,
+  'correlation'
+> {
   protected createFragmentShader() {
     const n = (this.props.kernels.x.length - 1) / 2
 
@@ -23,7 +26,7 @@ export class CorrelationY56 extends Pass<CorrelationY56Props, 'correlation'> {
         const y = i - n
         const texelHeight = y / this.props.height
         return [
-          `values = texture(correlation, texCoord + vec2(0, ${texelHeight})).rgb;`,
+          `values = texture(correlation, texCoord + vec2(0, ${texelHeight}));`,
           `weights = vec3(${weights.map((weight) => weight[i]).join(', ')});`,
           `result.xy += values.xy * weights.zy;`,
         ].join('\n        ')
@@ -41,7 +44,7 @@ export class CorrelationY56 extends Pass<CorrelationY56Props, 'correlation'> {
       out vec4 result;
 
       void main() {
-        vec3 values;
+        vec4 values;
         vec3 weights;
         result = vec4(0);
 
