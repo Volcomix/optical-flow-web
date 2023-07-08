@@ -25,7 +25,7 @@ export class CorrelationX extends Pass<CorrelationXProps, 'signal'> {
         return `texture(signal, texCoord + vec2(${texelWidth}, 0)).r * vec3(${weights
           .map((weight) => weight[i])
           .join(', ')})`
-      }
+      },
     ).join(' +\n          ')
 
     return /* glsl */ `#version 300 es

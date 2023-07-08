@@ -33,7 +33,7 @@ const config = {
 const addControllers = (parent: GUI, title: string, array: number[]) => {
   const folder = parent.addFolder(title)
   return Array.from({ length: array.length }, (_, i) =>
-    folder.add(array, `${i}`).disable()
+    folder.add(array, `${i}`).disable(),
   )
 }
 
@@ -257,7 +257,7 @@ let projection: Projection
 const readPixel = <P, T extends string>(
   pass: Pass<P, T>,
   controllers: Controller[],
-  offset = 0
+  offset = 0,
 ) => {
   pass.readPixel(config.x, config.y, pixelData)
   const n = Math.min(4, controllers.length - offset)

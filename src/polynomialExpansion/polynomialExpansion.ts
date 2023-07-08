@@ -36,7 +36,7 @@ export type PolynomialExpansionResult = {
 
 const polynomialExpansion = (
   signal: HTMLImageElement,
-  options: PolynomialExpansionOptions = {}
+  options: PolynomialExpansionOptions = {},
 ): PolynomialExpansionResult => {
   let canvas: HTMLCanvasElement | OffscreenCanvas
   if (options.canvas) {

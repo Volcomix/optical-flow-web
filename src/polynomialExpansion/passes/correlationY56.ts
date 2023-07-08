@@ -27,7 +27,7 @@ export class CorrelationY56 extends Pass<CorrelationY56Props, 'correlation'> {
           `weights = vec3(${weights.map((weight) => weight[i]).join(', ')});`,
           `result.xy += values.xy * weights.zy;`,
         ].join('\n        ')
-      }
+      },
     ).join('\n\n        ')
 
     return /* glsl */ `#version 300 es

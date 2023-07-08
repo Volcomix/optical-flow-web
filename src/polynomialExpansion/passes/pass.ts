@@ -12,7 +12,7 @@ export type PassProps<T extends string, U extends Record<string, unknown>> = {
 export abstract class Pass<
   P,
   T extends string,
-  U extends Record<string, unknown> = Record<string, never>
+  U extends Record<string, unknown> = Record<string, never>,
 > {
   static logShaders = false
 
@@ -22,7 +22,7 @@ export abstract class Pass<
   constructor(
     private gl: WebGL2RenderingContext,
     private bufferInfo: twgl.BufferInfo,
-    protected props: PassProps<T, U> & P
+    protected props: PassProps<T, U> & P,
   ) {
     const vertexShader = this.createVertexShader()
     const fragmentShader = this.createFragmentShader()
@@ -72,7 +72,7 @@ export abstract class Pass<
   render() {
     this.gl.bindFramebuffer(
       this.gl.FRAMEBUFFER,
-      this.frameBufferInfo?.framebuffer ?? null
+      this.frameBufferInfo?.framebuffer ?? null,
     )
     this.gl.useProgram(this.programInfo.program)
     twgl.setBuffersAndAttributes(this.gl, this.programInfo, this.bufferInfo)
@@ -85,7 +85,7 @@ export abstract class Pass<
   readPixel(x: number, y: number, dstData: ArrayBufferView | null) {
     this.gl.bindFramebuffer(
       this.gl.FRAMEBUFFER,
-      this.frameBufferInfo?.framebuffer ?? null
+      this.frameBufferInfo?.framebuffer ?? null,
     )
     this.gl.readPixels(x, y, 1, 1, this.gl.RGBA, this.gl.FLOAT, dstData)
   }
