@@ -18,6 +18,14 @@ body {
     sans-serif;
 }
 
+.result {
+  display: grid;
+}
+
+.result__item {
+  grid-area: 1 / 1;
+}
+
 img,
 canvas {
   width: 100%;
