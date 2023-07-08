@@ -1,4 +1,4 @@
-.signal_container {
+.signal {
   position: relative;
 }
 
@@ -7,4 +7,23 @@
   transform: translate(-50%, -50%);
   border: 1px solid red;
   pointer-events: none;
+}
+
+.result {
+  display: grid;
+}
+
+.result__item {
+  grid-area: 1 / 1;
+}
+
+.result__title {
+  width: min(100vh, 100vw);
+  height: min(100vh / 2, 100vw / 2);
+  place-self: center;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  justify-items: center;
+  color: white;
+  text-shadow: 0 0 14px black;
 }

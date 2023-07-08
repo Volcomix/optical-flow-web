@@ -8,11 +8,17 @@
     <link rel="styleSheet" href="/style.css" />
   </head>
   <body>
-    <div class="signal_container">
+    <div class="signal">
       <img src="/assets/sintel210_1.png" draggable="false" />
       <div class="marked-point"></div>
     </div>
-    <canvas></canvas>
+    <div class="result">
+      <canvas class="result__item"></canvas>
+      <div class="result__item result__title">
+        <span>Original signal</span>
+        <span>Reconstructed signal projection</span>
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
