@@ -2,13 +2,14 @@ import { Controller, GUI } from 'lil-gui'
 import Stats from 'stats.js'
 import * as twgl from 'twgl.js'
 
-import { Projection } from './demo/shaders/projection'
-import { Renormalize } from './demo/shaders/renormalize'
-import { Signal } from './demo/shaders/signal'
-import { PolynomialExpansionResult } from './polynomialExpansion'
-import { ShaderPass } from './utils/shaderPass'
+import { PolynomialExpansionResult } from '../polynomialExpansion'
+import { ShaderPass } from '../utils/shaderPass'
 
-import './style.css'
+import { Projection } from './shaders/projection'
+import { Renormalize } from './shaders/renormalize'
+import { Signal } from './shaders/signal'
+
+import './demo.css'
 
 const stats = new Stats()
 stats.showPanel(0)
@@ -119,7 +120,7 @@ const handleImageMouseMove = (event: MouseEvent) => {
 image.onmousedown = handleImageMouseMove
 image.onmousemove = handleImageMouseMove
 
-const { default: polynomialExpansion } = await import('./polynomialExpansion')
+const { default: polynomialExpansion } = await import('../polynomialExpansion')
 
 const canvas = document.querySelector('canvas')
 if (!canvas) {
