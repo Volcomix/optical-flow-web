@@ -24,7 +24,7 @@ const config = {
   y: 387,
   kernelSize: 11,
   sigma: 1.5,
-  logShaders: true,
+  logShaders: false,
   correlX: new Array<number>(3).fill(0),
   correlY: new Array<number>(6).fill(0),
   coeffs: new Array<number>(6).fill(0),
@@ -250,7 +250,12 @@ const computePolynomialExpansion = () => {
 
 x.onChange(updateDisplay)
 y.onChange(updateDisplay)
-kernelSize.onChange(computePolynomialExpansion)
+kernelSize.onChange(() => {
+  updatesEnabled = false
+  sigma.setValue(0.15 * (config.kernelSize - 1))
+  updatesEnabled = true
+  computePolynomialExpansion()
+})
 sigma.onChange(computePolynomialExpansion)
 logShaders.onChange(computePolynomialExpansion)
 reset.onChange(computePolynomialExpansion)
