@@ -3,6 +3,7 @@ import ShaderPass from '../../utils/shaderPass'
 export type LumaTransformRec = 709 | 601
 
 export type IntensityProps = {
+  /** @default 709 */
   lumaTransformRec?: LumaTransformRec
 }
 

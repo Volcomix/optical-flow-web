@@ -209,6 +209,8 @@ const computePolynomialExpansion = () => {
 
   polynomialExpansion = new PolynomialExpansion(image, {
     canvas,
+    width: image.naturalWidth,
+    height: image.naturalHeight,
     kernelSize: config.kernelSize,
     logShaders: config.logShaders,
   })

@@ -9,17 +9,42 @@ import Coefficients56 from './shaders/coefficients56'
 import CorrelationX from './shaders/correlationX'
 import CorrelationY14 from './shaders/correlationY14'
 import CorrelationY56 from './shaders/correlationY56'
-import Intensity from './shaders/intensity'
+import Intensity, { LumaTransformRec } from './shaders/intensity'
 import { Kernels } from './types'
+
+export type IntensityOptions = {
+  /** @default 709 */
+  lumaTransformRec?: LumaTransformRec // TODO Use it
+
+  /** @default PolynomialExpansionOptions.precision */
+  precision?: 8 | 16 | 32 // TODO Use it
+}
 
 export type PolynomialExpansionOptions = {
   canvas?: HTMLCanvasElement | OffscreenCanvas
+
+  /** @default canvas?.width ?? 1 */
+  width?: number // TODO Make it mandatory if no canvas defined
+
+  /** @default canvas?.height ?? 1 */
+  height?: number // TODO Make it mandatory if no canvas defined
 
   /** @default 11 */
   kernelSize?: number
 
   /** @default 0.15 * (kernelSize - 1) */
-  sigma?: number
+  sigma?: number // TODO Control it from UI
+
+  /** @default 16 */
+  precision?: 16 | 32 // TODO Use it
+
+  /**
+   * Set to `true` (default) or define the IntensityOptions to let
+   * this class compute the intensity from a colored RGB(A) signal.
+   * Set to `false` if the signal is already made of gray intensity pixels.
+   * @default true
+   */
+  intensiy?: boolean | IntensityOptions // TODO Use it
 
   /** @default false */
   logShaders?: boolean
@@ -38,19 +63,17 @@ class PolynomialExpansion {
   private height: number
 
   constructor(
-    signal: HTMLImageElement,
+    signal: TexImageSource | ArrayBufferView,
     options: PolynomialExpansionOptions = {},
   ) {
-    const width = signal.naturalWidth
-    const height = signal.naturalHeight
-    this.width = width
-    this.height = height
+    this.width = options.width ?? options.canvas?.width ?? 1
+    this.height = options.height ?? options.canvas?.height ?? 1
 
     let canvas: HTMLCanvasElement | OffscreenCanvas
     if (options.canvas) {
       canvas = options.canvas
     } else {
-      canvas = new OffscreenCanvas(width, height)
+      canvas = new OffscreenCanvas(this.width, this.height)
     }
 
     const gl = canvas.getContext('webgl2')
@@ -81,38 +104,38 @@ class PolynomialExpansion {
       uniforms: { signal: textures.signal },
       frameBuffer: {
         attachment: { internalFormat: gl.R8 },
-        width,
-        height,
+        width: this.width,
+        height: this.height,
       },
     })
     this.correlationX = new CorrelationX(gl, bufferInfo, {
       kernels,
-      width,
+      width: this.width,
       uniforms: { signal: this.intensity.texture },
       frameBuffer: {
         attachment: { internalFormat: gl.RGBA32F },
-        width,
-        height,
+        width: this.width,
+        height: this.height,
       },
     })
     this.correlationY14 = new CorrelationY14(gl, bufferInfo, {
       kernels,
-      height,
+      height: this.height,
       uniforms: { correlation: this.correlationX.texture },
       frameBuffer: {
         attachment: { internalFormat: gl.RGBA32F },
-        width,
-        height,
+        width: this.width,
+        height: this.height,
       },
     })
     this.correlationY56 = new CorrelationY56(gl, bufferInfo, {
       kernels,
-      height,
+      height: this.height,
       uniforms: { correlation: this.correlationX.texture },
       frameBuffer: {
         attachment: { internalFormat: gl.RG32F },
-        width,
-        height,
+        width: this.width,
+        height: this.height,
       },
     })
     this.coefficients14 = new Coefficients14(gl, bufferInfo, {
@@ -123,8 +146,8 @@ class PolynomialExpansion {
       },
       frameBuffer: {
         attachment: { internalFormat: gl.RGBA32F },
-        width,
-        height,
+        width: this.width,
+        height: this.height,
       },
     })
     this.coefficients56 = new Coefficients56(gl, bufferInfo, {
@@ -135,8 +158,8 @@ class PolynomialExpansion {
       },
       frameBuffer: {
         attachment: { internalFormat: gl.RG32F },
-        width,
-        height,
+        width: this.width,
+        height: this.height,
       },
     })
   }
