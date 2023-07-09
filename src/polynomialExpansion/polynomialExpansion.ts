@@ -40,7 +40,7 @@ export type PolynomialExpansionCommonOptions = {
   kernelSize?: number
 
   /** @default 0.15 * (kernelSize - 1) */
-  sigma?: number // TODO Control it from UI
+  sigma?: number
 
   /** @default 16 */
   precision?: 16 | 32 // TODO Use it

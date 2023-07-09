@@ -23,6 +23,7 @@ const config = {
   x: 585,
   y: 387,
   kernelSize: 11,
+  sigma: 1.5,
   logShaders: true,
   correlX: new Array<number>(3).fill(0),
   correlY: new Array<number>(6).fill(0),
@@ -46,6 +47,7 @@ const kernSizes = Array.from({ length: 49 }, (_, i) => i * 2 + 3)
 const x = gui.add(config, 'x', 0).step(1)
 const y = gui.add(config, 'y', 0).step(1)
 const kernelSize = gui.add(config, 'kernelSize', kernSizes).name('kernel size')
+const sigma = gui.add(config, 'sigma')
 const logShaders = gui.add(config, 'logShaders').name('log shaders')
 const reset = gui.add(config, 'reset')
 const correlFolder = gui.addFolder('Separable correlation')
@@ -212,6 +214,7 @@ const computePolynomialExpansion = () => {
     width: image.naturalWidth,
     height: image.naturalHeight,
     kernelSize: config.kernelSize,
+    sigma: config.sigma,
     logShaders: config.logShaders,
   })
 
@@ -248,6 +251,7 @@ const computePolynomialExpansion = () => {
 x.onChange(updateDisplay)
 y.onChange(updateDisplay)
 kernelSize.onChange(computePolynomialExpansion)
+sigma.onChange(computePolynomialExpansion)
 logShaders.onChange(computePolynomialExpansion)
 reset.onChange(computePolynomialExpansion)
 
