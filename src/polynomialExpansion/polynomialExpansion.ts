@@ -116,14 +116,12 @@ class PolynomialExpansion {
       width: this.width,
       height: this.height,
     }
-
     const frameBufferRGBA = {
       attachment: {
         internalFormat: options.precision === 32 ? gl.RGBA32F : gl.RGBA16F,
       },
       ...frameBufferSize,
     }
-
     const frameBufferRG = {
       attachment: {
         internalFormat: options.precision === 32 ? gl.RG32F : gl.RG16F,
