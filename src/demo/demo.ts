@@ -3,7 +3,7 @@ import Stats from 'stats.js'
 import * as twgl from 'twgl.js'
 
 import type PolynomialExpansionClass from '../polynomialExpansion'
-import { Precision } from '../polynomialExpansion'
+import { IntensityPrecision, Precision } from '../polynomialExpansion'
 import { LumaTransformRec } from '../polynomialExpansion/shaders/intensity'
 import ShaderPass from '../utils/shaderPass'
 
@@ -29,6 +29,7 @@ const config = {
   precision: 16 as Precision,
   intensity: {
     lumaTransformRec: 709 as LumaTransformRec,
+    precision: 16 as IntensityPrecision,
   },
   logShaders: false,
   correlX: new Array<number>(3).fill(0),
@@ -57,9 +58,16 @@ const sigma = gui.add(config, 'sigma')
 const precision = gui.add(config, 'precision', { '16 bits': 16, '32 bits': 32 })
 
 const intensityFolder = gui.addFolder('Intensity').close()
+
 const lumaTransformRec = intensityFolder
   .add(config.intensity, 'lumaTransformRec', [709, 601])
   .name('luma transform rec.')
+
+const intensityPrecision = intensityFolder.add(config.intensity, 'precision', {
+  '8 bits': 8,
+  '16 bits': 16,
+  '32 bits': 32,
+})
 
 const logShaders = gui.add(config, 'logShaders').name('log shaders')
 const reset = gui.add(config, 'reset')
@@ -232,6 +240,7 @@ const computePolynomialExpansion = () => {
     precision: config.precision,
     intensity: {
       lumaTransformRec: config.intensity.lumaTransformRec,
+      precision: config.intensity.precision,
     },
     logShaders: config.logShaders,
   })
@@ -272,6 +281,7 @@ kernelSize.onChange(() => sigma.setValue(0.15 * (config.kernelSize - 1)))
 sigma.onChange(computePolynomialExpansion)
 precision.onChange(computePolynomialExpansion)
 lumaTransformRec.onChange(computePolynomialExpansion)
+intensityPrecision.onChange(computePolynomialExpansion)
 logShaders.onChange(computePolynomialExpansion)
 reset.onChange(computePolynomialExpansion)
 

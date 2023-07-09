@@ -20,7 +20,7 @@ export type IntensityOptions = {
   lumaTransformRec?: LumaTransformRec
 
   /** @default PolynomialExpansionOptions.precision */
-  precision?: IntensityPrecision // TODO Use it
+  precision?: IntensityPrecision
 }
 
 export type PolynomialExpansionWithCanvasOptions = {
@@ -115,6 +115,11 @@ class PolynomialExpansion {
 
     ShaderPass.logShaders = options.logShaders ?? false
 
+    let intensityPrecision: IntensityPrecision = options.precision ?? 16
+    if (typeof options.intensity === 'object' && options.intensity.precision) {
+      intensityPrecision = options.intensity.precision
+    }
+
     const frameBufferSize = {
       width: this.width,
       height: this.height,
@@ -139,9 +144,15 @@ class PolynomialExpansion {
           : undefined,
       uniforms: { signal: textures.signal },
       frameBuffer: {
-        attachment: { internalFormat: gl.R8 },
-        width: this.width,
-        height: this.height,
+        attachment: {
+          internalFormat:
+            intensityPrecision === 32
+              ? gl.R32F
+              : intensityPrecision === 16
+              ? gl.R16F
+              : gl.R8,
+        },
+        ...frameBufferSize,
       },
     })
     this.correlationX = new CorrelationX(gl, bufferInfo, {
