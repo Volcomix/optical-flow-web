@@ -35,6 +35,7 @@ export type PolynomialExpansionWithoutCanvasOptions = {
   height: number
 } & PolynomialExpansionCommonOptions
 
+// TODO Option to remove intermediate passes
 export type PolynomialExpansionCommonOptions = {
   /** @default 11 */
   kernelSize?: number
@@ -43,7 +44,7 @@ export type PolynomialExpansionCommonOptions = {
   sigma?: number
 
   /** @default 16 */
-  precision?: 16 | 32 // TODO Use it
+  precision?: 16 | 32
 
   /**
    * Set to `true` (default) or define the IntensityOptions to let
@@ -111,6 +112,25 @@ class PolynomialExpansion {
 
     ShaderPass.logShaders = options.logShaders ?? false
 
+    const frameBufferSize = {
+      width: this.width,
+      height: this.height,
+    }
+
+    const frameBufferRGBA = {
+      attachment: {
+        internalFormat: options.precision === 32 ? gl.RGBA32F : gl.RGBA16F,
+      },
+      ...frameBufferSize,
+    }
+
+    const frameBufferRG = {
+      attachment: {
+        internalFormat: options.precision === 32 ? gl.RG32F : gl.RG16F,
+      },
+      ...frameBufferSize,
+    }
+
     this.intensity = new Intensity(gl, bufferInfo, {
       lumaTransformRec: 601,
       uniforms: { signal: textures.signal },
@@ -124,31 +144,19 @@ class PolynomialExpansion {
       kernels,
       width: this.width,
       uniforms: { signal: this.intensity.texture },
-      frameBuffer: {
-        attachment: { internalFormat: gl.RGBA32F },
-        width: this.width,
-        height: this.height,
-      },
+      frameBuffer: frameBufferRGBA,
     })
     this.correlationY14 = new CorrelationY14(gl, bufferInfo, {
       kernels,
       height: this.height,
       uniforms: { correlation: this.correlationX.texture },
-      frameBuffer: {
-        attachment: { internalFormat: gl.RGBA32F },
-        width: this.width,
-        height: this.height,
-      },
+      frameBuffer: frameBufferRGBA,
     })
     this.correlationY56 = new CorrelationY56(gl, bufferInfo, {
       kernels,
       height: this.height,
       uniforms: { correlation: this.correlationX.texture },
-      frameBuffer: {
-        attachment: { internalFormat: gl.RG32F },
-        width: this.width,
-        height: this.height,
-      },
+      frameBuffer: frameBufferRG,
     })
     this.coefficients14 = new Coefficients14(gl, bufferInfo, {
       invG,
@@ -156,11 +164,7 @@ class PolynomialExpansion {
         correlation14: this.correlationY14.texture,
         correlation56: this.correlationY56.texture,
       },
-      frameBuffer: {
-        attachment: { internalFormat: gl.RGBA32F },
-        width: this.width,
-        height: this.height,
-      },
+      frameBuffer: frameBufferRGBA,
     })
     this.coefficients56 = new Coefficients56(gl, bufferInfo, {
       invG,
@@ -168,11 +172,7 @@ class PolynomialExpansion {
         correlation14: this.correlationY14.texture,
         correlation56: this.correlationY56.texture,
       },
-      frameBuffer: {
-        attachment: { internalFormat: gl.RG32F },
-        width: this.width,
-        height: this.height,
-      },
+      frameBuffer: frameBufferRG,
     })
   }
 
