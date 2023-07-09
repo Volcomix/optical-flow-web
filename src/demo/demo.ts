@@ -3,6 +3,8 @@ import Stats from 'stats.js'
 import * as twgl from 'twgl.js'
 
 import type PolynomialExpansionClass from '../polynomialExpansion'
+import { Precision } from '../polynomialExpansion'
+import { LumaTransformRec } from '../polynomialExpansion/shaders/intensity'
 import ShaderPass from '../utils/shaderPass'
 
 import Projection from './shaders/projection'
@@ -24,7 +26,10 @@ const config = {
   y: 387,
   kernelSize: 11,
   sigma: 1.5,
-  precision: 16 as 16 | 32,
+  precision: 16 as Precision,
+  intensity: {
+    lumaTransformRec: 709 as LumaTransformRec,
+  },
   logShaders: false,
   correlX: new Array<number>(3).fill(0),
   correlY: new Array<number>(6).fill(0),
@@ -50,8 +55,15 @@ const y = gui.add(config, 'y', 0).step(1)
 const kernelSize = gui.add(config, 'kernelSize', kernSizes).name('kernel size')
 const sigma = gui.add(config, 'sigma')
 const precision = gui.add(config, 'precision', { '16 bits': 16, '32 bits': 32 })
+
+const intensityFolder = gui.addFolder('Intensity').close()
+const lumaTransformRec = intensityFolder
+  .add(config.intensity, 'lumaTransformRec', [709, 601])
+  .name('luma transform rec.')
+
 const logShaders = gui.add(config, 'logShaders').name('log shaders')
 const reset = gui.add(config, 'reset')
+
 const correlFolder = gui.addFolder('Separable correlation')
 const correlX = addControllers(correlFolder, 'x direction', config.correlX)
 const correlY = addControllers(correlFolder, 'y direction', config.correlY)
@@ -218,6 +230,9 @@ const computePolynomialExpansion = () => {
     kernelSize: config.kernelSize,
     sigma: config.sigma,
     precision: config.precision,
+    intensity: {
+      lumaTransformRec: config.intensity.lumaTransformRec,
+    },
     logShaders: config.logShaders,
   })
 
@@ -256,6 +271,7 @@ y.onChange(updateDisplay)
 kernelSize.onChange(() => sigma.setValue(0.15 * (config.kernelSize - 1)))
 sigma.onChange(computePolynomialExpansion)
 precision.onChange(computePolynomialExpansion)
+lumaTransformRec.onChange(computePolynomialExpansion)
 logShaders.onChange(computePolynomialExpansion)
 reset.onChange(computePolynomialExpansion)
 

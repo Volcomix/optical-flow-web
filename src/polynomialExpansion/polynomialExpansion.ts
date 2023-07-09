@@ -12,12 +12,15 @@ import CorrelationY56 from './shaders/correlationY56'
 import Intensity, { LumaTransformRec } from './shaders/intensity'
 import { Kernels } from './types'
 
+export type Precision = 16 | 32
+export type IntensityPrecision = 8 | 16 | 32
+
 export type IntensityOptions = {
   /** @default 709 */
-  lumaTransformRec?: LumaTransformRec // TODO Use it
+  lumaTransformRec?: LumaTransformRec
 
   /** @default PolynomialExpansionOptions.precision */
-  precision?: 8 | 16 | 32 // TODO Use it
+  precision?: IntensityPrecision // TODO Use it
 }
 
 export type PolynomialExpansionWithCanvasOptions = {
@@ -44,7 +47,7 @@ export type PolynomialExpansionCommonOptions = {
   sigma?: number
 
   /** @default 16 */
-  precision?: 16 | 32
+  precision?: Precision
 
   /**
    * Set to `true` (default) or define the IntensityOptions to let
@@ -52,7 +55,7 @@ export type PolynomialExpansionCommonOptions = {
    * Set to `false` if the signal is already made of gray intensity pixels.
    * @default true
    */
-  intensiy?: boolean | IntensityOptions // TODO Use it
+  intensity?: boolean | IntensityOptions // TODO Use it
 
   /** @default false */
   logShaders?: boolean
@@ -130,7 +133,10 @@ class PolynomialExpansion {
     }
 
     this.intensity = new Intensity(gl, bufferInfo, {
-      lumaTransformRec: 601,
+      lumaTransformRec:
+        typeof options.intensity === 'object'
+          ? options.intensity.lumaTransformRec
+          : undefined,
       uniforms: { signal: textures.signal },
       frameBuffer: {
         attachment: { internalFormat: gl.R8 },
