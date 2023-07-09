@@ -12,7 +12,7 @@ import Signal from './shaders/signal'
 import './demo.css'
 
 const stats = new Stats()
-stats.showPanel(0)
+stats.showPanel(1)
 document.body.appendChild(stats.dom)
 
 const gui = new GUI()
@@ -237,7 +237,9 @@ const computePolynomialExpansion = () => {
     uniforms: { projection: projection.texture },
   })
 
+  stats.begin()
   polynomialExpansion.update()
+  stats.end()
   updateDisplay()
 }
 
