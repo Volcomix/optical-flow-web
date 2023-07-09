@@ -1,4 +1,4 @@
-import { ShaderPass } from '../../utils/shaderPass'
+import ShaderPass from '../../utils/shaderPass'
 import { Kernels } from '../types'
 
 export type CorrelationY14Props = {
@@ -6,10 +6,7 @@ export type CorrelationY14Props = {
   height: number
 }
 
-export class CorrelationY14 extends ShaderPass<
-  CorrelationY14Props,
-  'correlation'
-> {
+class CorrelationY14 extends ShaderPass<CorrelationY14Props, 'correlation'> {
   protected createFragmentShader() {
     const n = (this.props.kernels.x.length - 1) / 2
 
@@ -52,3 +49,5 @@ export class CorrelationY14 extends ShaderPass<
     `
   }
 }
+
+export default CorrelationY14

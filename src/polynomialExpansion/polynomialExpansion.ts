@@ -2,18 +2,18 @@ import { inv } from 'mathjs'
 import * as twgl from 'twgl.js'
 
 import gaussian from '../gaussian'
-import { ShaderPass } from '../utils/shaderPass'
+import ShaderPass from '../utils/shaderPass'
 
-import { Coefficients14 } from './shaders/coefficients14'
-import { Coefficients56 } from './shaders/coefficients56'
-import { CorrelationX } from './shaders/correlationX'
-import { CorrelationY14 } from './shaders/correlationY14'
-import { CorrelationY56 } from './shaders/correlationY56'
-import { Intensity } from './shaders/intensity'
+import Coefficients14 from './shaders/coefficients14'
+import Coefficients56 from './shaders/coefficients56'
+import CorrelationX from './shaders/correlationX'
+import CorrelationY14 from './shaders/correlationY14'
+import CorrelationY56 from './shaders/correlationY56'
+import Intensity from './shaders/intensity'
 import { Kernels } from './types'
 
 export type PolynomialExpansionOptions = {
-  canvas?: HTMLCanvasElement
+  canvas?: HTMLCanvasElement | OffscreenCanvas
 
   /** @default 11 */
   kernelSize?: number
@@ -25,108 +25,131 @@ export type PolynomialExpansionOptions = {
   logShaders?: boolean
 }
 
-export type PolynomialExpansionResult = {
+class PolynomialExpansion {
   intensity: Intensity
   correlationX: CorrelationX
   correlationY14: CorrelationY14
   correlationY56: CorrelationY56
   coefficients14: Coefficients14
   coefficients56: Coefficients56
-}
 
-const polynomialExpansion = (
-  signal: HTMLImageElement,
-  options: PolynomialExpansionOptions = {},
-): PolynomialExpansionResult => {
-  const width = signal.naturalWidth
-  const height = signal.naturalHeight
+  private gl: WebGL2RenderingContext
+  private width: number
+  private height: number
 
-  let canvas: HTMLCanvasElement | OffscreenCanvas
-  if (options.canvas) {
-    canvas = options.canvas
-  } else {
-    canvas = new OffscreenCanvas(width, height)
+  constructor(
+    signal: HTMLImageElement,
+    options: PolynomialExpansionOptions = {},
+  ) {
+    const width = signal.naturalWidth
+    const height = signal.naturalHeight
+    this.width = width
+    this.height = height
+
+    let canvas: HTMLCanvasElement | OffscreenCanvas
+    if (options.canvas) {
+      canvas = options.canvas
+    } else {
+      canvas = new OffscreenCanvas(width, height)
+    }
+
+    const gl = canvas.getContext('webgl2')
+    if (!gl) {
+      throw new Error('WebGL 2 is not available')
+    }
+    this.gl = gl
+    twgl.addExtensionsToContext(gl)
+
+    const applicability = gaussian(options.kernelSize ?? 11, options.sigma)
+    const invG = inv(precomputeG(applicability))
+    const kernels = precomputeKernels(applicability)
+
+    const arrays = {
+      inPosition: [-1, -1, 0, 1, -1, 0, -1, 1, 0, -1, 1, 0, 1, -1, 0, 1, 1, 0],
+      inTexCoord: [0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1],
+    }
+    const bufferInfo = twgl.createBufferInfoFromArrays(gl, arrays)
+
+    const textures = twgl.createTextures(gl, {
+      signal: { src: signal },
+    })
+
+    ShaderPass.logShaders = options.logShaders ?? false
+
+    this.intensity = new Intensity(gl, bufferInfo, {
+      lumaTransformRec: 601,
+      uniforms: { signal: textures.signal },
+      frameBuffer: {
+        attachment: { internalFormat: gl.R8 },
+        width,
+        height,
+      },
+    })
+    this.correlationX = new CorrelationX(gl, bufferInfo, {
+      kernels,
+      width,
+      uniforms: { signal: this.intensity.texture },
+      frameBuffer: {
+        attachment: { internalFormat: gl.RGBA32F },
+        width,
+        height,
+      },
+    })
+    this.correlationY14 = new CorrelationY14(gl, bufferInfo, {
+      kernels,
+      height,
+      uniforms: { correlation: this.correlationX.texture },
+      frameBuffer: {
+        attachment: { internalFormat: gl.RGBA32F },
+        width,
+        height,
+      },
+    })
+    this.correlationY56 = new CorrelationY56(gl, bufferInfo, {
+      kernels,
+      height,
+      uniforms: { correlation: this.correlationX.texture },
+      frameBuffer: {
+        attachment: { internalFormat: gl.RG32F },
+        width,
+        height,
+      },
+    })
+    this.coefficients14 = new Coefficients14(gl, bufferInfo, {
+      invG,
+      uniforms: {
+        correlation14: this.correlationY14.texture,
+        correlation56: this.correlationY56.texture,
+      },
+      frameBuffer: {
+        attachment: { internalFormat: gl.RGBA32F },
+        width,
+        height,
+      },
+    })
+    this.coefficients56 = new Coefficients56(gl, bufferInfo, {
+      invG,
+      uniforms: {
+        correlation14: this.correlationY14.texture,
+        correlation56: this.correlationY56.texture,
+      },
+      frameBuffer: {
+        attachment: { internalFormat: gl.RG32F },
+        width,
+        height,
+      },
+    })
   }
 
-  const gl = canvas.getContext('webgl2')
-  if (!gl) {
-    throw new Error('WebGL 2 is not available')
-  }
-  twgl.addExtensionsToContext(gl)
+  update() {
+    this.gl.viewport(0, 0, this.width, this.height)
 
-  const applicability = gaussian(options.kernelSize ?? 11, options.sigma)
-  const invG = inv(precomputeG(applicability))
-  const kernels = precomputeKernels(applicability)
-
-  const arrays = {
-    inPosition: [-1, -1, 0, 1, -1, 0, -1, 1, 0, -1, 1, 0, 1, -1, 0, 1, 1, 0],
-    inTexCoord: [0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1],
-  }
-  const bufferInfo = twgl.createBufferInfoFromArrays(gl, arrays)
-
-  const textures = twgl.createTextures(gl, {
-    signal: { src: signal },
-  })
-
-  ShaderPass.logShaders = options.logShaders ?? false
-
-  const intensity = new Intensity(gl, bufferInfo, {
-    lumaTransformRec: 601,
-    uniforms: { signal: textures.signal },
-    frameBuffer: { attachment: { internalFormat: gl.R8 }, width, height },
-  })
-  const correlationX = new CorrelationX(gl, bufferInfo, {
-    kernels,
-    width,
-    uniforms: { signal: intensity.texture },
-    frameBuffer: { attachment: { internalFormat: gl.RGBA32F }, width, height },
-  })
-  const correlationY14 = new CorrelationY14(gl, bufferInfo, {
-    kernels,
-    height,
-    uniforms: { correlation: correlationX.texture },
-    frameBuffer: { attachment: { internalFormat: gl.RGBA32F }, width, height },
-  })
-  const correlationY56 = new CorrelationY56(gl, bufferInfo, {
-    kernels,
-    height,
-    uniforms: { correlation: correlationX.texture },
-    frameBuffer: { attachment: { internalFormat: gl.RG32F }, width, height },
-  })
-  const coefficients14 = new Coefficients14(gl, bufferInfo, {
-    invG,
-    uniforms: {
-      correlation14: correlationY14.texture,
-      correlation56: correlationY56.texture,
-    },
-    frameBuffer: { attachment: { internalFormat: gl.RGBA32F }, width, height },
-  })
-  const coefficients56 = new Coefficients56(gl, bufferInfo, {
-    invG,
-    uniforms: {
-      correlation14: correlationY14.texture,
-      correlation56: correlationY56.texture,
-    },
-    frameBuffer: { attachment: { internalFormat: gl.RG32F }, width, height },
-  })
-
-  // Render
-  gl.viewport(0, 0, width, height)
-
-  intensity.render()
-  correlationX.render()
-  correlationY14.render()
-  correlationY56.render()
-  coefficients14.render()
-  coefficients56.render()
-
-  return {
-    intensity,
-    correlationX,
-    correlationY14,
-    correlationY56,
-    coefficients14,
-    coefficients56,
+    this.intensity.render()
+    this.correlationX.render()
+    this.correlationY14.render()
+    this.correlationY56.render()
+    this.coefficients14.render()
+    this.coefficients56.render()
   }
 }
 
@@ -171,7 +194,7 @@ const precomputeKernels = (applicability: number[]) => {
   return kernels
 }
 
-export default polynomialExpansion
+export default PolynomialExpansion
 
 if (import.meta.vitest) {
   const { describe, expect, test } = import.meta.vitest

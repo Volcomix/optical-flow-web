@@ -2,12 +2,12 @@ import { Controller, GUI } from 'lil-gui'
 import Stats from 'stats.js'
 import * as twgl from 'twgl.js'
 
-import { PolynomialExpansionResult } from '../polynomialExpansion'
-import { ShaderPass } from '../utils/shaderPass'
+import type PolynomialExpansionClass from '../polynomialExpansion'
+import ShaderPass from '../utils/shaderPass'
 
-import { Projection } from './shaders/projection'
-import { Renormalize } from './shaders/renormalize'
-import { Signal } from './shaders/signal'
+import Projection from './shaders/projection'
+import Renormalize from './shaders/renormalize'
+import Signal from './shaders/signal'
 
 import './demo.css'
 
@@ -120,7 +120,7 @@ const handleImageMouseMove = (event: MouseEvent) => {
 image.onmousedown = handleImageMouseMove
 image.onmousemove = handleImageMouseMove
 
-const { default: polynomialExpansion } = await import('../polynomialExpansion')
+const { default: PolynomialExpansion } = await import('../polynomialExpansion')
 
 const canvas = document.querySelector('canvas')
 if (!canvas) {
@@ -153,7 +153,7 @@ const renormArrays = {
 const renormBufferInfo = twgl.createBufferInfoFromArrays(gl, renormArrays)
 let renormalize: Renormalize
 
-let result: PolynomialExpansionResult
+let polynomialExpansion: PolynomialExpansionClass
 const pixelData = new Float32Array(4)
 
 const readPixel = <P, T extends string>(
@@ -192,11 +192,11 @@ const updateDisplay = () => {
 
   updateMarkedPoint()
 
-  readPixel(result.correlationX, correlX)
-  readPixel(result.correlationY14, correlY)
-  readPixel(result.correlationY56, correlY, 4)
-  readPixel(result.coefficients14, coeffs)
-  readPixel(result.coefficients56, coeffs, 4)
+  readPixel(polynomialExpansion.correlationX, correlX)
+  readPixel(polynomialExpansion.correlationY14, correlY)
+  readPixel(polynomialExpansion.correlationY56, correlY, 4)
+  readPixel(polynomialExpansion.coefficients14, coeffs)
+  readPixel(polynomialExpansion.coefficients56, coeffs, 4)
 }
 
 const computePolynomialExpansion = () => {
@@ -207,7 +207,7 @@ const computePolynomialExpansion = () => {
   canvas.width = config.kernelSize * 2
   canvas.height = config.kernelSize
 
-  result = polynomialExpansion(image, {
+  polynomialExpansion = new PolynomialExpansion(image, {
     canvas,
     kernelSize: config.kernelSize,
     logShaders: config.logShaders,
@@ -217,14 +217,14 @@ const computePolynomialExpansion = () => {
     kernelSize: config.kernelSize,
     width: image.naturalWidth,
     height: image.naturalHeight,
-    uniforms: { signal: result.intensity.texture },
+    uniforms: { signal: polynomialExpansion.intensity.texture },
   })
 
   projection = new Projection(gl, projectionBuffInfo, {
     kernelSize: config.kernelSize,
     uniforms: {
-      coefficients14: result.coefficients14.texture,
-      coefficients56: result.coefficients56.texture,
+      coefficients14: polynomialExpansion.coefficients14.texture,
+      coefficients56: polynomialExpansion.coefficients56.texture,
     },
     frameBuffer: {
       attachment: { internalFormat: gl.RG32F, min: gl.NEAREST_MIPMAP_NEAREST },
@@ -237,6 +237,7 @@ const computePolynomialExpansion = () => {
     uniforms: { projection: projection.texture },
   })
 
+  polynomialExpansion.update()
   updateDisplay()
 }
 

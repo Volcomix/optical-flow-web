@@ -16,7 +16,7 @@ export type ShaderPassProps<
   }
 }
 
-export abstract class ShaderPass<
+abstract class ShaderPass<
   P,
   T extends string,
   U extends Record<string, unknown> = Record<string, never>,
@@ -106,3 +106,5 @@ export abstract class ShaderPass<
     return this.frameBufferInfo?.attachments[0] as WebGLTexture
   }
 }
+
+export default ShaderPass

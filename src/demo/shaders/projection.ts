@@ -1,4 +1,4 @@
-import { ShaderPass } from '../../utils/shaderPass'
+import ShaderPass from '../../utils/shaderPass'
 
 export type ProjectionProps = {
   kernelSize: number
@@ -9,7 +9,7 @@ export type ProjectionUniforms = {
   y?: number
 }
 
-export class Projection extends ShaderPass<
+class Projection extends ShaderPass<
   ProjectionProps,
   'coefficients14' | 'coefficients56',
   ProjectionUniforms
@@ -60,3 +60,5 @@ export class Projection extends ShaderPass<
     `
   }
 }
+
+export default Projection

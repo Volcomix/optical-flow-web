@@ -1,6 +1,6 @@
-import { ShaderPass } from '../../utils/shaderPass'
+import ShaderPass from '../../utils/shaderPass'
 
-export class Renormalize extends ShaderPass<unknown, 'projection'> {
+class Renormalize extends ShaderPass<unknown, 'projection'> {
   protected createFragmentShader() {
     return /* glsl */ `#version 300 es
 
@@ -53,3 +53,5 @@ export class Renormalize extends ShaderPass<unknown, 'projection'> {
     `
   }
 }
+
+export default Renormalize

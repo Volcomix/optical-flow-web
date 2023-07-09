@@ -1,4 +1,4 @@
-import { ShaderPass } from '../../utils/shaderPass'
+import ShaderPass from '../../utils/shaderPass'
 
 export type SignalProps = {
   kernelSize: number
@@ -11,7 +11,7 @@ export type SignalUniforms = {
   y?: number
 }
 
-export class Signal extends ShaderPass<SignalProps, 'signal', SignalUniforms> {
+class Signal extends ShaderPass<SignalProps, 'signal', SignalUniforms> {
   set x(value: number) {
     this.props.uniforms.x = value
   }
@@ -48,3 +48,5 @@ export class Signal extends ShaderPass<SignalProps, 'signal', SignalUniforms> {
     `
   }
 }
+
+export default Signal

@@ -1,10 +1,10 @@
-import { ShaderPass } from '../../utils/shaderPass'
+import ShaderPass from '../../utils/shaderPass'
 
 export type Coefficients14Props = {
   invG: number[][]
 }
 
-export class Coefficients14 extends ShaderPass<
+class Coefficients14 extends ShaderPass<
   Coefficients14Props,
   'correlation14' | 'correlation56'
 > {
@@ -40,3 +40,5 @@ export class Coefficients14 extends ShaderPass<
     `
   }
 }
+
+export default Coefficients14
