@@ -20,15 +20,22 @@ export type IntensityOptions = {
   precision?: 8 | 16 | 32 // TODO Use it
 }
 
-export type PolynomialExpansionOptions = {
-  canvas?: HTMLCanvasElement | OffscreenCanvas
+export type PolynomialExpansionWithCanvasOptions = {
+  canvas: HTMLCanvasElement | OffscreenCanvas
 
-  /** @default canvas?.width ?? 1 */
-  width?: number // TODO Make it mandatory if no canvas defined
+  /** @default canvas.width */
+  width?: number
 
-  /** @default canvas?.height ?? 1 */
-  height?: number // TODO Make it mandatory if no canvas defined
+  /** @default canvas.height */
+  height?: number
+} & PolynomialExpansionCommonOptions
 
+export type PolynomialExpansionWithoutCanvasOptions = {
+  width: number
+  height: number
+} & PolynomialExpansionCommonOptions
+
+export type PolynomialExpansionCommonOptions = {
   /** @default 11 */
   kernelSize?: number
 
@@ -50,6 +57,10 @@ export type PolynomialExpansionOptions = {
   logShaders?: boolean
 }
 
+export type PolynomialExpansionOptions =
+  | PolynomialExpansionWithCanvasOptions
+  | PolynomialExpansionWithoutCanvasOptions
+
 class PolynomialExpansion {
   intensity: Intensity
   correlationX: CorrelationX
@@ -64,16 +75,17 @@ class PolynomialExpansion {
 
   constructor(
     signal: TexImageSource | ArrayBufferView,
-    options: PolynomialExpansionOptions = {},
+    options: PolynomialExpansionOptions,
   ) {
-    this.width = options.width ?? options.canvas?.width ?? 1
-    this.height = options.height ?? options.canvas?.height ?? 1
-
     let canvas: HTMLCanvasElement | OffscreenCanvas
-    if (options.canvas) {
+    if ('canvas' in options) {
       canvas = options.canvas
+      this.width = options.width ?? canvas.width
+      this.height = options.height ?? canvas.height
     } else {
-      canvas = new OffscreenCanvas(this.width, this.height)
+      canvas = new OffscreenCanvas(options.width, options.height)
+      this.width = options.width
+      this.height = options.height
     }
 
     const gl = canvas.getContext('webgl2')
