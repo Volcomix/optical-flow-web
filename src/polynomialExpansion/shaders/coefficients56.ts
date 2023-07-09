@@ -1,11 +1,11 @@
-import { ShaderPass } from './shaderPass'
+import { ShaderPass } from '../../utils/shaderPass'
 
-export type Coefficients14Props = {
+export type Coefficients56Props = {
   invG: number[][]
 }
 
-export class Coefficients14 extends ShaderPass<
-  Coefficients14Props,
+export class Coefficients56 extends ShaderPass<
+  Coefficients56Props,
   'correlation14' | 'correlation56'
 > {
   protected createFragmentShader() {
@@ -31,10 +31,10 @@ export class Coefficients14 extends ShaderPass<
         vec2 values56 = texture(correlation56, texCoord).rg;
 
         result = vec4(
-          dot(vec4(a, 0, 0, e), values14) + dot(vec2(e, 0), values56),
-          dot(vec4(0, b, 0, 0), values14) + dot(vec2(0, 0), values56),
-          dot(vec4(0, 0, b, 0), values14) + dot(vec2(0, 0), values56),
-          dot(vec4(e, 0, 0, c), values14) + dot(vec2(0, 0), values56)
+          dot(vec4(e, 0, 0, 0), values14) + dot(vec2(c, 0), values56),
+          dot(vec4(0, 0, 0, 0), values14) + dot(vec2(0, d), values56),
+          0,
+          0
         );
       }
     `

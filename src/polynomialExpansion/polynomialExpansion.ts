@@ -2,14 +2,14 @@ import { inv } from 'mathjs'
 import * as twgl from 'twgl.js'
 
 import gaussian from '../gaussian'
+import { ShaderPass } from '../utils/shaderPass'
 
-import { Coefficients14 } from './passes/coefficients14'
-import { Coefficients56 } from './passes/coefficients56'
-import { CorrelationX } from './passes/correlationX'
-import { CorrelationY14 } from './passes/correlationY14'
-import { CorrelationY56 } from './passes/correlationY56'
-import { Intensity } from './passes/intensity'
-import { ShaderPass } from './passes/shaderPass'
+import { Coefficients14 } from './shaders/coefficients14'
+import { Coefficients56 } from './shaders/coefficients56'
+import { CorrelationX } from './shaders/correlationX'
+import { CorrelationY14 } from './shaders/correlationY14'
+import { CorrelationY56 } from './shaders/correlationY56'
+import { Intensity } from './shaders/intensity'
 import { Kernels } from './types'
 
 export type PolynomialExpansionOptions = {
@@ -40,7 +40,13 @@ const polynomialExpansion = (
 ): PolynomialExpansionResult => {
   const width = signal.naturalWidth
   const height = signal.naturalHeight
-  const canvas = options.canvas ?? new OffscreenCanvas(width, height)
+
+  let canvas: HTMLCanvasElement | OffscreenCanvas
+  if (options.canvas) {
+    canvas = options.canvas
+  } else {
+    canvas = new OffscreenCanvas(width, height)
+  }
 
   const gl = canvas.getContext('webgl2')
   if (!gl) {

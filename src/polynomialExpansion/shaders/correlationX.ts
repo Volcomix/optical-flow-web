@@ -1,6 +1,5 @@
+import { ShaderPass } from '../../utils/shaderPass'
 import { Kernels } from '../types'
-
-import { ShaderPass } from './shaderPass'
 
 export type CorrelationXProps = {
   kernels: Kernels

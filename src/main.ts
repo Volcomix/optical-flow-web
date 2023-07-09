@@ -2,8 +2,11 @@ import { Controller, GUI } from 'lil-gui'
 import Stats from 'stats.js'
 import * as twgl from 'twgl.js'
 
+import { Projection } from './demo/shaders/projection'
+import { Renormalize } from './demo/shaders/renormalize'
+import { Signal } from './demo/shaders/signal'
 import { PolynomialExpansionResult } from './polynomialExpansion'
-import { ShaderPass } from './polynomialExpansion/passes/shaderPass'
+import { ShaderPass } from './utils/shaderPass'
 
 import './style.css'
 
@@ -116,178 +119,11 @@ const handleImageMouseMove = (event: MouseEvent) => {
 image.onmousedown = handleImageMouseMove
 image.onmousemove = handleImageMouseMove
 
+const { default: polynomialExpansion } = await import('./polynomialExpansion')
+
 const canvas = document.querySelector('canvas')
 if (!canvas) {
   throw new Error('Canvas not found')
-}
-
-const { default: polynomialExpansion } = await import('./polynomialExpansion')
-
-let result: PolynomialExpansionResult
-const pixelData = new Float32Array(4)
-
-type SignalProps = {
-  kernelSize: number
-  width: number
-  height: number
-}
-
-type SignalUniforms = {
-  x?: number
-  y?: number
-}
-
-class Signal extends ShaderPass<SignalProps, 'signal', SignalUniforms> {
-  set x(value: number) {
-    this.props.uniforms.x = value
-  }
-
-  set y(value: number) {
-    this.props.uniforms.y = value
-  }
-
-  protected createFragmentShader() {
-    const n = ((this.props.kernelSize - 1) / 2).toFixed(1)
-
-    const texelWidth = 1 / this.props.width
-    const texelHeight = 1 / this.props.height
-    const kernelSize = this.props.kernelSize.toFixed(1)
-
-    return /* glsl */ `#version 300 es
-
-      precision highp float;
-
-      uniform sampler2D signal;
-      uniform float x;
-      uniform float y;
-
-      in vec2 texCoord;
-
-      out vec4 result;
-
-      void main() {
-        vec2 texelSize = vec2(${texelWidth}, ${texelHeight});
-        vec2 signalCoord = vec2(x, y);
-        vec2 kernelCoord = vec2(texCoord * ${kernelSize} - ${n});
-        result = vec4(texture(signal, (signalCoord + kernelCoord) * texelSize).r);
-      }
-    `
-  }
-}
-
-type ProjectionProps = {
-  kernelSize: number
-}
-
-type ProjectionUniforms = {
-  x?: number
-  y?: number
-}
-
-class Projection extends ShaderPass<
-  ProjectionProps,
-  'coefficients14' | 'coefficients56',
-  ProjectionUniforms
-> {
-  set x(value: number) {
-    this.props.uniforms.x = value
-  }
-
-  set y(value: number) {
-    this.props.uniforms.y = value
-  }
-
-  protected createFragmentShader() {
-    const n = ((this.props.kernelSize - 1) / 2).toFixed(1)
-    const kernelSize = this.props.kernelSize.toFixed(1)
-
-    return /* glsl */ `#version 300 es
-
-      precision highp float;
-
-      uniform sampler2D coefficients14;
-      uniform sampler2D coefficients56;
-      uniform int x;
-      uniform int y;
-
-      in vec2 texCoord;
-
-      out vec2 result;
-
-      void main() {
-        ivec2 signalCoord = ivec2(x, y);
-        vec2 kernelCoord = texCoord * ${kernelSize} - ${n};
-
-        float projection = 
-          dot(texelFetch(coefficients14, signalCoord, 0), vec4(
-            1,
-            kernelCoord.x,
-            kernelCoord.y,
-            kernelCoord.x * kernelCoord.x
-          )) +
-          dot(texelFetch(coefficients56, signalCoord, 0).rg, vec2(
-            kernelCoord.y * kernelCoord.y,
-            kernelCoord.x * kernelCoord.y
-          ));
-        
-        result = vec2(projection, projection * projection);
-      }
-    `
-  }
-}
-
-class Renormalize extends ShaderPass<unknown, 'projection'> {
-  protected createFragmentShader() {
-    return /* glsl */ `#version 300 es
-
-      precision highp float;
-
-      uniform sampler2D projection;
-
-      in vec2 texCoord;
-
-      out vec4 result;
-
-      // https://gist.github.com/mikhailov-work/0d177465a8151eb6ede1768d51d476c7
-      
-      // Copyright 2019 Google LLC.
-      // SPDX-License-Identifier: Apache-2.0
-
-      // Polynomial approximation in GLSL for the Turbo colormap
-      // Original LUT: https://gist.github.com/mikhailov-work/ee72ba4191942acecc03fe6da94fc73f
-
-      // Authors:
-      //   Colormap Design: Anton Mikhailov (mikhailov@google.com)
-      //   GLSL Approximation: Ruofei Du (ruofei@google.com)
-
-      vec3 TurboColormap(in float x) {
-        const vec4 kRedVec4 = vec4(0.13572138, 4.61539260, -42.66032258, 132.13108234);
-        const vec4 kGreenVec4 = vec4(0.09140261, 2.19418839, 4.84296658, -14.18503333);
-        const vec4 kBlueVec4 = vec4(0.10667330, 12.64194608, -60.58204836, 110.36276771);
-        const vec2 kRedVec2 = vec2(-152.94239396, 59.28637943);
-        const vec2 kGreenVec2 = vec2(4.27729857, 2.82956604);
-        const vec2 kBlueVec2 = vec2(-89.90310912, 27.34824973);
-        
-        x = clamp(x, 0.0, 1.0);
-        vec4 v4 = vec4( 1.0, x, x * x, x * x * x);
-        vec2 v2 = v4.zw * v4.z;
-        return vec3(
-          dot(v4, kRedVec4)   + dot(v2, kRedVec2),
-          dot(v4, kGreenVec4) + dot(v2, kGreenVec2),
-          dot(v4, kBlueVec4)  + dot(v2, kBlueVec2)
-        );
-      }
-
-      void main() {
-        float p = texture(projection, texCoord).r;
-        vec4 E = textureLod(projection, texCoord, 6.0);
-        float stdDev = sqrt(E.g - E.r * E.r);
-        float left = min(0.0, E.r - stdDev * 3.0);
-        float right = max(1.0, E.r + stdDev * 3.0);
-        result = vec4(TurboColormap(p / (right - left) - left), 1);
-      }
-    `
-  }
 }
 
 const gl = canvas.getContext('webgl2')
@@ -315,6 +151,9 @@ const renormArrays = {
 }
 const renormBufferInfo = twgl.createBufferInfoFromArrays(gl, renormArrays)
 let renormalize: Renormalize
+
+let result: PolynomialExpansionResult
+const pixelData = new Float32Array(4)
 
 const readPixel = <P, T extends string>(
   pass: ShaderPass<P, T>,

@@ -1,4 +1,4 @@
-import { ShaderPass } from './shaderPass'
+import { ShaderPass } from '../../utils/shaderPass'
 
 export type LumaTransformRec = 709 | 601
 
