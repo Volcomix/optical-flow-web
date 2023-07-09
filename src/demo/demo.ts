@@ -250,12 +250,7 @@ const computePolynomialExpansion = () => {
 
 x.onChange(updateDisplay)
 y.onChange(updateDisplay)
-kernelSize.onChange(() => {
-  updatesEnabled = false
-  sigma.setValue(0.15 * (config.kernelSize - 1))
-  updatesEnabled = true
-  computePolynomialExpansion()
-})
+kernelSize.onChange(() => sigma.setValue(0.15 * (config.kernelSize - 1)))
 sigma.onChange(computePolynomialExpansion)
 logShaders.onChange(computePolynomialExpansion)
 reset.onChange(computePolynomialExpansion)
