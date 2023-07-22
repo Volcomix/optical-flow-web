@@ -259,7 +259,10 @@ const computePolynomialExpansion = () => {
       coefficients56: polynomialExpansion.coefficients56.texture,
     },
     frameBuffer: {
-      attachment: { internalFormat: gl.RG32F, min: gl.NEAREST_MIPMAP_NEAREST },
+      attachment: {
+        internalFormat: config.precision === 32 ? gl.RG32F : gl.RG16F,
+        min: gl.NEAREST_MIPMAP_NEAREST,
+      },
       width: config.kernelSize,
       height: config.kernelSize,
     },
