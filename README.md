@@ -11,3 +11,11 @@ This project aim at implementing flexible APIs to:
 - take as argument any kind of image source including GPU textures to avoid unnecessary CPU/GPU transfer
 - provide the results in several ways including GPU textures to avoid unnecessary CPU/GPU transfer
 - provide the most lightweight processing that could be plugged to neural networks running in web browsers on GPU
+
+**References:**
+
+- [Two-Frame Motion Estimation Based on
+  Polynomial Expansion (Gunnar Farnebäck)](https://www.diva-portal.org/smash/get/diva2:273847/FULLTEXT01.pdf)
+- [Polynomial Expansion for
+  Orientation and Motion
+  Estimation (Gunnar Farnebäck)](https://www.diva-portal.org/smash/get/diva2:302485/FULLTEXT01.pdf)
