@@ -4,7 +4,7 @@
 
 Fast implementation of Gunnar Farnebäck optical flow, running in web browsers and fully accelerated in WebGL (for now) and WebGPU (will come next).
 
-This project aim at implementing flexible APIs to:
+This project aims at implementing flexible APIs to:
 
 - compute the dense polynomial expansion of pixels (to be used for any other need than optical flow calculation)
 - compute the dense optical flow (displacement estimation) of the pixels between 2 images (e.g. 2 video frames)
